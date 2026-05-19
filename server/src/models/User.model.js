@@ -126,10 +126,9 @@ userSchema.virtual("fullProfile").get(function () {
 });
 
 // ─── Pre-save Hook — Hash password only when modified ────────────────────────
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
   this.password = await bcrypt.hash(this.password, SALT_ROUNDS);
-  next();
 });
 
 // ─── Instance Methods ────────────────────────────────────────────────────────

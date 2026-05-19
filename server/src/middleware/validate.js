@@ -13,9 +13,9 @@ const validate = (schema, target = "body") =>
 
     if (!result.success) {
       // Format Zod errors into a clean array: [{ field, message }]
-      const errors = result.error.errors.map((err) => ({
-        field:   err.path.join(".") || "unknown",
-        message: err.message,
+      const errors = result.error.issues.map((issue) => ({
+        field:   issue.path.join(".") || "unknown",
+        message: issue.message,
       }));
 
       // First error as the main message, full list in errors array

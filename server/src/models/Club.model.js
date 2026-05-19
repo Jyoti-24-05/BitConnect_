@@ -44,6 +44,7 @@ const clubSchema = new mongoose.Schema(
     slug: {
       // URL-friendly identifier — e.g. "coding-club-bit"
       type:   String,
+      required: true,
       unique: true,
       lowercase: true,
       trim:   true,
@@ -115,7 +116,7 @@ const clubSchema = new mongoose.Schema(
 );
 
 // ─── Indexes ──────────────────────────────────────────────────────────────────
-clubSchema.index({ slug: 1 });
+
 clubSchema.index({ category: 1, isActive: 1 });
 clubSchema.index({ "members.user": 1 });                    // "clubs I'm in"
 clubSchema.index({ isVerified: 1, category: 1 });           // discover page
