@@ -49,10 +49,23 @@ export const createPost = async ({ authorId, content, type, visibility, tags, cl
 
 // ─── Get feed (cursor-based pagination) ──────────────────────────────────────
 export const getFeed = async ({ cursor, limit, tags, type }) => {
-  const posts = await Post.getFeed({ cursor, limit, tags, type });
+  const filter = {
+    isDeleted:  false,
+    isApproved: true,
+    visibility: "public",
+    ...(cursor && { createdAt: { $lt: new Date(cursor) } }),
+    ...(tags?.length && { tags: { $in: tags } }),
+    ...(type && { type }),
+  };
 
-  // Next cursor = createdAt of the last post
-  const nextCursor = posts.length === limit
+  const posts = await Post.find(filter)
+    .sort({ isPinned: -1, createdAt: -1 })
+    .limit(limit ?? 10)
+    .populate("author", "username profilePicture role isVerified")
+    .populate("club",   "name logo slug")
+    .lean();
+
+  const nextCursor = posts.length === (limit ?? 10)
     ? posts[posts.length - 1].createdAt.toISOString()
     : null;
 

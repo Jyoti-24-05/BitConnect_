@@ -1,18 +1,18 @@
 // client/src/api/axiosInstance.js
 import axios from "axios";
-import { API_BASE_URL } from "@/utils/constants";
+
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1";
 
 const axiosInstance = axios.create({
-  baseURL:         API_BASE_URL,
-  withCredentials: true,          // send httpOnly refresh token cookie
-  headers: { "Content-Type": "application/json" },
-  timeout: 15000,
+  baseURL:         BASE_URL,
+  withCredentials: true,
+  headers:         { "Content-Type": "application/json" },
+  timeout:         15000,
 });
 
-// ─── Request interceptor — attach access token ────────────────────────────────
+// Attach token to every request
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Read token from memory — never localStorage (XSS risk)
     const token = window.__accessToken__;
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
@@ -20,9 +20,16 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ─── Response interceptor — silent token refresh on 401 ──────────────────────
-let isRefreshing     = false;
-let failedQueue      = []; // queued requests while refresh is in flight
+// These URLs must never trigger a refresh retry
+const SKIP_REFRESH_URLS = [
+  "/auth/refresh",
+  "/auth/login",
+  "/auth/register",
+  "/auth/logout",
+];
+
+let isRefreshing = false;
+let failedQueue  = [];
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach(({ resolve, reject }) =>
@@ -32,48 +39,49 @@ const processQueue = (error, token = null) => {
 };
 
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (res) => res,
   async (error) => {
     const original = error.config;
+    const url      = original?.url ?? "";
 
-    // Only handle 401 — and only once per request (_retry flag prevents loops)
-    if (error.response?.status !== 401 || original._retry) {
-      return Promise.reject(error);
-    }
+    const shouldSkip =
+      error.response?.status !== 401 ||
+      original._retry ||
+      SKIP_REFRESH_URLS.some((u) => url.includes(u));
+
+    if (shouldSkip) return Promise.reject(error);
 
     if (isRefreshing) {
-      // Queue this request until the refresh completes
-      return new Promise((resolve, reject) => {
-        failedQueue.push({ resolve, reject });
-      }).then((token) => {
+      return new Promise((resolve, reject) =>
+        failedQueue.push({ resolve, reject })
+      ).then((token) => {
         original.headers.Authorization = `Bearer ${token}`;
         return axiosInstance(original);
       });
     }
 
-    original._retry  = true;
-    isRefreshing     = true;
+    original._retry = true;
+    isRefreshing    = true;
 
     try {
-      // Cookie is sent automatically — no body needed
-      const { data } = await axios.post(
-        `${API_BASE_URL}/auth/refresh`,
+      const { data }         = await axios.post(
+        `${BASE_URL}/auth/refresh`,
         {},
         { withCredentials: true }
       );
-
-      const newToken          = data.data.accessToken;
-      window.__accessToken__  = newToken;
-
+      const newToken         = data.data.accessToken;
+      window.__accessToken__ = newToken;
       processQueue(null, newToken);
       original.headers.Authorization = `Bearer ${newToken}`;
       return axiosInstance(original);
-    } catch (refreshError) {
-      processQueue(refreshError, null);
-      // Refresh failed — clear token and redirect to login
+    } catch (err) {
+      processQueue(err, null);
       window.__accessToken__ = null;
-      window.location.href   = "/login";
-      return Promise.reject(refreshError);
+      const onAuthPage =
+        window.location.pathname.startsWith("/login") ||
+        window.location.pathname.startsWith("/register");
+      if (!onAuthPage) window.location.href = "/login";
+      return Promise.reject(err);
     } finally {
       isRefreshing = false;
     }

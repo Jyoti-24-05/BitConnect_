@@ -16,6 +16,12 @@ const COOKIE_OPTIONS = {
   maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
+const CLEAR_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure:   process.env.NODE_ENV === "production",
+  sameSite: "strict",
+};
+
 // ─── Internal helper ──────────────────────────────────────────────────────────
 const generateTokenPair = (user) => ({
   accessToken:  user.generateAccessToken(),
@@ -74,7 +80,7 @@ export const logout = catchAsync(async (req, res) => {
 
   res
     .status(200)
-    .clearCookie("refreshToken", COOKIE_OPTIONS)
+    .clearCookie("refreshToken", CLEAR_COOKIE_OPTIONS)
     .json(new ApiResponse(200, {}, "Logged out successfully"));
 });
 
@@ -161,7 +167,7 @@ export const changePassword = catchAsync(async (req, res) => {
 
   res
     .status(200)
-    .clearCookie("refreshToken", COOKIE_OPTIONS)
+    .clearCookie("refreshToken", CLEAR_COOKIE_OPTIONS)
     .json(
       new ApiResponse(200, {}, "Password changed — please login again")
     );

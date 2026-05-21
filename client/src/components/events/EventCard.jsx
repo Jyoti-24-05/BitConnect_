@@ -18,7 +18,7 @@ const CATEGORY_COLORS = {
   other:       "bg-gray-100  text-gray-600",
 };
 
-const EventCard = ({ event }) => {
+const EventCard = ({ event, isRsvped = false, viewMode = "grid" }) => {
   const isOnline     = event.venue?.isOnline;
   const isSoldOut    = event.isSoldOut;
   const isUpcoming   = new Date(event.startDate) > new Date();

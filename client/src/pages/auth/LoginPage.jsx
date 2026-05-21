@@ -8,6 +8,7 @@ import toast                 from "react-hot-toast";
 import { useDispatch }       from "react-redux";
 import { authApi }           from "@/api/authApi";
 import { setCredentials }    from "@/store/slices/authSlice";
+import useAuth             from "@/hooks/useAuth";
 
 const schema = z.object({
   email:    z.string().email("Invalid email"),
@@ -18,8 +19,9 @@ const schema = z.object({
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:8000";
 
 const LoginPage = () => {
+  const {login}= useAuth();
   const navigate              = useNavigate();
-  const dispatch              = useDispatch();
+  const dispatch             = useDispatch();
   const [loading, setLoading] = useState(false);
 
   const {
@@ -29,27 +31,19 @@ const LoginPage = () => {
   } = useForm({ resolver: zodResolver(schema) });
 
   const onSubmit = async (data) => {
-    setLoading(true);
-    try {
-      const { data: res } = await authApi.login(data);
-
-      window.__accessToken__ = res.data.accessToken;
-      dispatch(setCredentials({
-        user:        res.data.user,
-        accessToken: res.data.accessToken,
-      }));
-
-      toast.success("Welcome back!");
-      navigate("/feed");
-    } catch (err) {
-      const msg = err.response?.data?.message ?? "Login failed";
-      toast.error(msg);
-      console.error("[Login error]", err.response?.data);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  setLoading(true);
+  try {
+    await login(data); // use AuthContext login — it handles everything
+    toast.success("Welcome back!");
+    navigate("/feed", { replace: true });
+  } catch (err) {
+    const msg = err.response?.data?.message ?? "Login failed";
+    toast.error(msg);
+    console.error("[Login error]", err.response?.data);
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white
                     flex items-center justify-center px-4">
@@ -141,7 +135,7 @@ const LoginPage = () => {
                            border border-gray-200 rounded-xl text-sm
                            text-gray-600 hover:bg-gray-50 transition font-medium"
               >
-                🔵 Google
+                 Google
               </a>
               <a
                 href={`${SERVER_URL}/api/v1/auth/github`}
@@ -149,7 +143,7 @@ const LoginPage = () => {
                            border border-gray-200 rounded-xl text-sm
                            text-gray-600 hover:bg-gray-50 transition font-medium"
               >
-                ⚫ GitHub
+                 GitHub
               </a>
             </div>
           </div>
