@@ -4,6 +4,12 @@ import { ApiError } from "../utils/ApiError.js";
 const errorHandler = (err, req, res, next) => {
   let error = err;
 
+  if (process.env.NODE_ENV === "development") {
+    console.error(`\n❌ [${req.method}] ${req.url}`);
+    console.error("Message:", err.message);
+    console.error("Stack:",   err.stack);
+  }
+
   // If it's not already an ApiError, wrap it
   if (!(error instanceof ApiError)) {
     const statusCode = error.statusCode ?? 500;

@@ -85,26 +85,43 @@ export const updateProfileSchema = z.object({
   college: z
     .string()
     .trim()
-    .max(100, "College name cannot exceed 100 characters")
+    .max(100)
     .optional(),
   graduationYear: z
-    .number()
-    .int()
-    .min(2000, "Invalid graduation year")
-    .max(2035, "Invalid graduation year")
-    .optional(),
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((v) => (v ? parseInt(String(v), 10) : undefined)),
   gender: z
-    .enum(["male", "female", "non-binary", "prefer-not-to-say"])
+    .enum(["male", "female", "non-binary", "prefer-not-to-say", ""])
     .optional(),
+  // Accept both array and single string — FormData quirk
   skills: z
-    .array(z.string().trim().max(30))
-    .max(15, "Cannot add more than 15 skills")
-    .optional(),
+    .union([
+      z.array(z.string().trim().max(30)),
+      z.string().trim(),           // single value from FormData
+    ])
+    .optional()
+    .transform((val) => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val.filter(Boolean);
+      return val.split(",").map((s) => s.trim()).filter(Boolean);
+    }),
+  // socialLinks arrives as JSON string from FormData
   socialLinks: z
-    .object({
-      linkedin: z.string().url("Invalid LinkedIn URL").optional().or(z.literal("")),
-      github:   z.string().url("Invalid GitHub URL").optional().or(z.literal("")),
-      twitter:  z.string().url("Invalid Twitter URL").optional().or(z.literal("")),
-    })
-    .optional(),
+    .union([
+      z.object({
+        linkedin: z.string().optional().or(z.literal("")),
+        github:   z.string().optional().or(z.literal("")),
+        twitter:  z.string().optional().or(z.literal("")),
+      }),
+      z.string(), // JSON string from FormData
+    ])
+    .optional()
+    .transform((val) => {
+      if (!val) return undefined;
+      if (typeof val === "string") {
+        try { return JSON.parse(val); } catch { return undefined; }
+      }
+      return val;
+    }),
 });

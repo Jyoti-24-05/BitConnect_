@@ -59,7 +59,6 @@ export const loginUser = async ({ email, password }) => {
 export const refreshAccessToken = async (incomingRefreshToken) => {
   if (!incomingRefreshToken) throw new ApiError(401, "Refresh token missing");
 
-  // import jwt from "jsonwebtoken"; // dynamic to avoid circular at top of file
   let decoded;
   try {
     decoded = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
@@ -70,12 +69,10 @@ export const refreshAccessToken = async (incomingRefreshToken) => {
   const user = await User.findById(decoded._id).select("+refreshToken");
   if (!user) throw new ApiError(401, "User not found");
 
-  // Compare hashed versions — protects against stolen raw tokens in DB
   const hashed = hashToken(incomingRefreshToken);
   if (user.refreshToken !== hashed)
     throw new ApiError(401, "Refresh token reuse detected — please login again");
 
-  // Rotate: old token is invalidated, new pair issued (refresh token rotation)
   const { accessToken, refreshToken: newRefreshToken } = generateTokenPair(user);
   user.refreshToken = hashToken(newRefreshToken);
   await user.save({ validateBeforeSave: false });

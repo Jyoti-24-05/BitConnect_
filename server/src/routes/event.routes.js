@@ -1,70 +1,64 @@
-// server/src/routes/event.routes.js
+// server/src/routes/club.routes.js --
 import { Router }             from "express";
-import * as EventCtrl         from "../controllers/event.controller.js";
+import * as ClubCtrl          from "../controllers/club.controller.js";
 import { authenticate,
          authorize }          from "../middleware/authenticate.js";
-import validate               from "../middleware/validate.js";
-import { bannerUpload,
-         handleBannerUpload,
+import { avatarUpload,
+         handleAvatarUpload,
          handleMulterError }  from "../middleware/upload.js";
-import {
-  createEventSchema,
-  updateEventSchema,
-  rsvpSchema,
-  getEventsQuerySchema,
-}                             from "../validators/event.validator.js";
+import Club                   from "../models/Club.model.js";
+import { ApiResponse }        from "../utils/ApiResponse.js";
+import { ApiError }           from "../utils/ApiError.js";
+import { catchAsync }         from "../utils/catchAsync.js";
 
 const router = Router();
 
-// ─── Public routes ────────────────────────────────────────────────────────────
-// Guests can browse events — no auth required
-router.get(
-  "/",
-  validate(getEventsQuerySchema, "query"),
-  EventCtrl.getUpcomingEvents
-);
-router.get("/search",           EventCtrl.searchEvents);
-router.get("/club/:clubId",     EventCtrl.getEventsByClub);
-router.get("/:eventId",         EventCtrl.getEvent);
+// ── Public routes ─────────────────────────────────────────────────────────────
+router.get("/",        ClubCtrl.discoverClubs);
+router.get("/search",  ClubCtrl.searchClubs);
+router.get("/:slug",   ClubCtrl.getClub);
 
-// ─── Protected routes — must be logged in ────────────────────────────────────
+// ── All routes below require auth ─────────────────────────────────────────────
 router.use(authenticate);
 
-router.get("/my-rsvps", EventCtrl.getMyRsvps);
-
-// ─── RSVP ─────────────────────────────────────────────────────────────────────
-router.post(
-  "/:eventId/rsvp",
-  validate(rsvpSchema),
-  EventCtrl.rsvpToEvent
-);
-
-// ─── Create event — clubs and admins only ─────────────────────────────────────
+// ── Create club ───────────────────────────────────────────────────────────────
 router.post(
   "/",
-  authorize("club", "admin"),
-  (req, res, next) => bannerUpload.single("banner")(req, res, next),
+  (req, res, next) => avatarUpload.single("logo")(req, res, next),
   handleMulterError,
-  handleBannerUpload,
-  validate(createEventSchema),
-  EventCtrl.createEvent
+  handleAvatarUpload,
+  ClubCtrl.createClub
 );
 
-// ─── Update / delete — organizer or admin ─────────────────────────────────────
+// ── Membership ────────────────────────────────────────────────────────────────
+router.post("/:clubId/join",  ClubCtrl.joinClub);
+router.post("/:clubId/leave", ClubCtrl.leaveClub);
+
+// ── Club management ───────────────────────────────────────────────────────────
 router.patch(
-  "/:eventId",
-  authorize("club", "admin"),
-  (req, res, next) => bannerUpload.single("banner")(req, res, next),
+  "/:clubId",
+  (req, res, next) => avatarUpload.single("logo")(req, res, next),
   handleMulterError,
-  handleBannerUpload,
-  validate(updateEventSchema),
-  EventCtrl.updateEvent
+  handleAvatarUpload,
+  ClubCtrl.updateClub
 );
 
-router.delete(
-  "/:eventId",
-  authorize("club", "admin"),
-  EventCtrl.deleteEvent
+router.patch("/:clubId/requests/:userId", ClubCtrl.handleJoinRequest);
+router.patch("/:clubId/members/:userId/role", ClubCtrl.updateMemberRole);
+
+// ── Admin only — verify a club ────────────────────────────────────────────────
+router.patch(
+  "/:clubId/verify",
+  authorize("admin"),
+  catchAsync(async (req, res) => {
+    const club = await Club.findByIdAndUpdate(
+      req.params.clubId,
+      { isVerified: true },
+      { new: true }
+    );
+    if (!club) throw new ApiError(404, "Club not found");
+    res.status(200).json(new ApiResponse(200, club, "Club verified"));
+  })
 );
 
 export default router;

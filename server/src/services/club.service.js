@@ -8,22 +8,51 @@ import { getIO }                 from "../sockets/index.js";
 import { pushNotification }      from "../sockets/handlers/notif.handler.js";
 
 // ─── Create club ──────────────────────────────────────────────────────────────
-export const createClub = async ({ createdBy, name, description, category, isPrivate, tags, logo, banner }) => {
+export const createClub = async ({
+  createdBy, name, description, category,
+  isPrivate, tags, logo, banner,
+}) => {
+  // Duplicate name check
   const existing = await Club.findOne({ name });
   if (existing) throw new ApiError(409, "A club with this name already exists");
+
+  // Generate slug here — no external package needed
+  const baseSlug = name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+
+  // Ensure slug is unique
+  let slug    = baseSlug;
+  let counter = 1;
+  while (await Club.findOne({ slug })) {
+    slug = `${baseSlug}-${counter++}`;
+  }
+
+  // FormData sends "true"/"false" strings — parse to boolean
+  const isPrivateBool =
+    isPrivate === true || isPrivate === "true";
+
+  // Tags may arrive as array, single string, or undefined
+  let tagsArray = [];
+  if (Array.isArray(tags))        tagsArray = tags.filter(Boolean);
+  else if (typeof tags === "string" && tags.trim())
+    tagsArray = tags.split(",").map((t) => t.trim()).filter(Boolean);
 
   const club = await Club.create({
     name,
     description,
     category,
-    isPrivate: isPrivate ?? false,
-    tags:      tags      ?? [],
-    logo:      logo      ?? { url: "", publicId: "" },
-    banner:    banner    ?? { url: "", publicId: "" },
+    isPrivate:  isPrivateBool,
+    tags:       tagsArray,
+    logo:       logo   ?? { url: "", publicId: "" },
+    banner:     banner ?? { url: "", publicId: "" },
     createdBy,
-    admin:     createdBy,
-    // Creator is auto-added as co-admin member
-    members: [{ user: createdBy, role: "co-admin", status: "active" }],
+    admin:    createdBy,
+    members:  [{ user: createdBy, role: "co-admin", status: "active" }],
+    slug,
   });
 
   return club.populate("admin", "username profilePicture");

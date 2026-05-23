@@ -11,6 +11,12 @@ import { pushNotification }                        from "../sockets/handlers/not
 
 // ─── Create post ──────────────────────────────────────────────────────────────
 export const createPost = async ({ authorId, content, type, visibility, tags, clubId, opportunityMeta, images = [] }) => {
+
+  if (images.length > 4)
+    throw new ApiError(400, "Maximum 4 images allowed per post");
+  if (tags?.length > 5)
+    throw new ApiError(400, "Maximum 5 tags allowed per post");
+  
   // If posting to a club — verify membership/role
   if (clubId) {
     const club = await Club.findById(clubId);
@@ -48,9 +54,9 @@ export const createPost = async ({ authorId, content, type, visibility, tags, cl
 };
 
 // ─── Get feed (cursor-based pagination) ──────────────────────────────────────
-export const getFeed = async ({ cursor, limit, tags, type }) => {
+export const getFeed = async ({ cursor, limit = 10, tags, type } = {}) => {
   const filter = {
-    isDeleted:  false,
+    isDeleted:  { $ne: true },   // explicit — no hook needed
     isApproved: true,
     visibility: "public",
     ...(cursor && { createdAt: { $lt: new Date(cursor) } }),
@@ -60,17 +66,18 @@ export const getFeed = async ({ cursor, limit, tags, type }) => {
 
   const posts = await Post.find(filter)
     .sort({ isPinned: -1, createdAt: -1 })
-    .limit(limit ?? 10)
+    .limit(Number(limit))
     .populate("author", "username profilePicture role isVerified")
     .populate("club",   "name logo slug")
     .lean();
 
-  const nextCursor = posts.length === (limit ?? 10)
+  const nextCursor = posts.length === Number(limit)
     ? posts[posts.length - 1].createdAt.toISOString()
     : null;
 
   return { posts, nextCursor, hasMore: !!nextCursor };
 };
+
 
 // ─── Get single post ──────────────────────────────────────────────────────────
 export const getPostById = async (postId) => {
@@ -86,17 +93,18 @@ export const getPostById = async (postId) => {
 // ─── Get posts by user ────────────────────────────────────────────────────────
 export const getPostsByUser = async (userId, { cursor, limit = 10 } = {}) => {
   const filter = {
-    author: userId,
+    author:    userId,
+    isDeleted: { $ne: true },
     ...(cursor && { createdAt: { $lt: new Date(cursor) } }),
   };
 
   const posts = await Post.find(filter)
     .sort({ createdAt: -1 })
-    .limit(limit)
+    .limit(Number(limit))
     .populate("author", "username profilePicture isVerified")
     .lean();
 
-  const nextCursor = posts.length === limit
+  const nextCursor = posts.length === Number(limit)
     ? posts[posts.length - 1].createdAt.toISOString()
     : null;
 

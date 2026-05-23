@@ -121,24 +121,8 @@ postSchema.virtual("isLikedBy").get(function () {
 });
 
 // ─── Pre-save hooks ───────────────────────────────────────────────────────────
-postSchema.pre("save", function (next) {
-  // Enforce max 4 images per post
-  if (this.images?.length > 4)
-    return next(new Error("Maximum 4 images allowed per post"));
-  // Enforce max 5 tags
-  if (this.tags?.length > 5)
-    return next(new Error("Maximum 5 tags allowed per post"));
-  next();
-});
 
 // ─── Pre-query hook — always exclude soft-deleted posts ──────────────────────
-postSchema.pre(/^find/, function (next) {
-  // Only apply if caller hasn't explicitly asked for deleted posts
-  if (!this.getQuery().isDeleted) {
-    this.where({ isDeleted: false });
-  }
-  next();
-});
 
 // ─── Static methods ───────────────────────────────────────────────────────────
 

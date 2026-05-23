@@ -1,14 +1,16 @@
 // client/src/components/feed/CommentSection.jsx
-import { useState, useRef }   from "react";
-import { Link }               from "react-router-dom";
-import { Send, Trash2,
-         Heart, CornerDownRight } from "lucide-react";
-import { postApi }            from "@/api/postApi";
-import useAuth                from "@/hooks/useAuth";
-import Avatar                 from "@/components/common/Avatar";
-import { timeAgo }            from "@/utils/formatDate";
-import cn                     from "@/utils/cn";
-import toast                  from "react-hot-toast";
+import { useState, useRef }               from "react";
+import { Link }                           from "react-router-dom";
+import {
+  Send, Trash2, Heart,
+  CornerDownRight, MessageCircle,
+}                                         from "lucide-react";
+import { postApi }                        from "@/api/postApi";
+import useAuth                            from "@/hooks/useAuth";
+import Avatar                             from "@/components/common/Avatar";
+import { timeAgo }                        from "@/utils/formatDate";
+import cn                                 from "@/utils/cn";
+import toast                              from "react-hot-toast";
 
 // ─── Single comment ───────────────────────────────────────────────────────────
 const Comment = ({
@@ -325,7 +327,5 @@ const CommentSection = ({
   );
 };
 
-// Fix missing import inside Comment component
-import { MessageCircle } from "lucide-react";
 
 export default CommentSection;

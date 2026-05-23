@@ -62,7 +62,7 @@ const FeedPage = () => {
 
       {!hasMore && !loading && (
         <p className="text-center text-sm text-gray-400 py-8">
-          You're all caught up 🎉
+          welcome to BitConnet!
         </p>
       )}
     </div>

@@ -131,7 +131,7 @@ clubSchema.virtual("pendingRequestCount").get(function () {
 });
 
 // ─── Pre-save — auto-generate slug from name ──────────────────────────────────
-clubSchema.pre("save", function (next) {
+clubSchema.pre("save", async function () {
   if (this.isModified("name")) {
     this.slug = this.name
       .toLowerCase()
@@ -140,7 +140,6 @@ clubSchema.pre("save", function (next) {
       .replace(/\s+/g, "-")            // spaces to hyphens
       .replace(/-+/g, "-");            // collapse multiple hyphens
   }
-  next();
 });
 
 // ─── Static methods ───────────────────────────────────────────────────────────

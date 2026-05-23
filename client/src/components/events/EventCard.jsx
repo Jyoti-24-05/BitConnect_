@@ -23,6 +23,71 @@ const EventCard = ({ event, isRsvped = false, viewMode = "grid" }) => {
   const isSoldOut    = event.isSoldOut;
   const isUpcoming   = new Date(event.startDate) > new Date();
 
+  if (viewMode === "list") {
+    return (
+      <article className="bg-white rounded-2xl border border-gray-100
+                          shadow-sm hover:shadow-md transition p-4
+                          flex gap-4 items-start">
+        {/* Thumbnail */}
+        <div className="w-24 h-20 rounded-xl overflow-hidden shrink-0">
+          {event.banner?.url ? (
+            <img src={event.banner.url} alt=""
+                 className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-indigo-50 flex
+                            items-center justify-center">
+              <Calendar className="w-6 h-6 text-indigo-300" />
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <Link to={`/events/${event._id}`}>
+              <h3 className="font-semibold text-sm text-gray-900
+                             hover:text-indigo-600 transition line-clamp-1">
+                {event.title}
+              </h3>
+            </Link>
+            <span className={cn(
+              "text-xs font-medium px-2 py-0.5 rounded-full capitalize shrink-0",
+              CATEGORY_COLORS[event.category] ?? CATEGORY_COLORS.other
+            )}>
+              {event.category}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+            <span className="flex items-center gap-1 text-xs text-gray-500">
+              <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+              {formatEventDate(event.startDate)}
+            </span>
+            {event.venue?.isOnline ? (
+              <span className="flex items-center gap-1 text-xs text-green-600">
+                <Wifi className="w-3.5 h-3.5" /> Online
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-xs text-gray-500">
+                <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+                {event.venue?.name ?? "TBD"}
+              </span>
+            )}
+            <span className="flex items-center gap-1 text-xs text-gray-500">
+              <Users className="w-3.5 h-3.5 text-indigo-400" />
+              {event.rsvpCount ?? 0} going
+            </span>
+            {isRsvped && (
+              <span className="text-xs text-green-600 font-medium
+                               flex items-center gap-1">
+                ✓ You're going
+              </span>
+            )}
+          </div>
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article className="bg-white rounded-2xl border border-gray-100
                         shadow-sm hover:shadow-md transition overflow-hidden">

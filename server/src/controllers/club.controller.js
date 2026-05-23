@@ -1,17 +1,18 @@
 // server/src/controllers/club.controller.js
+import Club from "../models/Club.model.js";
 import * as ClubService   from "../services/club.service.js";
 import { ApiResponse }    from "../utils/ApiResponse.js";
 import { catchAsync }     from "../utils/catchAsync.js";
+import { ApiError } from "../utils/ApiError.js";
 
 // ─── POST /api/v1/clubs ───────────────────────────────────────────────────────
 export const createClub = catchAsync(async (req, res) => {
+  const logo = req.uploadedFile ?? { url: "", publicId: "" };
   const { name, description, category, isPrivate, tags } = req.body;
 
-  // Logo from upload middleware
-  const logo = req.uploadedFile ?? { url: "", publicId: "" };
-
+  // Slug is generated inside the service — no slugify package needed
   const club = await ClubService.createClub({
-    createdBy: req.user._id,
+    createdBy:   req.user._id,
     name,
     description,
     category,

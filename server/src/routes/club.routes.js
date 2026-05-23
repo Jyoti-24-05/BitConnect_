@@ -11,12 +11,21 @@ import { avatarUpload,
 const router = Router();
 
 // ─── Public routes ────────────────────────────────────────────────────────────
-router.get("/",        ClubCtrl.discoverClubs);
 router.get("/search",  ClubCtrl.searchClubs);
+router.get("/",        ClubCtrl.discoverClubs);
 router.get("/:slug",   ClubCtrl.getClub);     // slug not id — /clubs/coding-club-bit
 
 // ─── Protected routes ─────────────────────────────────────────────────────────
 router.use(authenticate);
+
+//create club
+router.post(
+  "/",
+  (req, res, next) => avatarUpload.single("logo")(req, res, next),
+  handleMulterError,
+  handleAvatarUpload,
+  ClubCtrl.createClub
+);
 
 // ─── Membership actions — any authenticated user ──────────────────────────────
 router.post("/:clubId/join",  ClubCtrl.joinClub);
@@ -47,6 +56,7 @@ router.patch(
   "/:clubId/verify",
   authorize("admin"),
   async (req, res, next) => {
+    try{
     // Inline — too small to warrant its own controller method
     const Club = (await import("../models/Club.model.js")).default;
     const { ApiResponse } = await import("../utils/ApiResponse.js");
@@ -55,9 +65,16 @@ router.patch(
       { isVerified: true },
       { new: true }
     );
-    if (!club) return next(new (await import("../utils/ApiError.js")).ApiError(404, "Club not found"));
-    res.status(200).json(new ApiResponse(200, club, "Club verified"));
+    if (!club) {
+  throw new ApiError(404, "Club not found");
   }
+  res.status(200).json(new ApiResponse(200, club, "Club verified successfully")
+  );
+  }
+  catch(err){
+    next(err);
+  }
+}
 );
 
 export default router;
