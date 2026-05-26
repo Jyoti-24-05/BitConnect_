@@ -22,11 +22,14 @@ import { ClubLogo }                   from "./ClubsPage";
 import { timeAgo }                    from "@/utils/formatDate";
 import cn                             from "@/utils/cn";
 import toast                          from "react-hot-toast";
+import { postApi } from "@/api/postApi";
+import PostCard    from "@/components/feed/PostCard";
+import PostSkeleton from "@/components/feed/PostSkeleton";
 
 import { FaInstagram , FaLinkedin} from "react-icons/fa";
 
 // ─── Tab config ───────────────────────────────────────────────────────────────
-const TABS = ["About", "Events", "Members"];
+const TABS = ["About","Posts", "Events", "Members"];
 
 const ClubDetailPage = () => {
   const { slug }           = useParams();
@@ -43,6 +46,48 @@ const ClubDetailPage = () => {
   const [requestModal, setRequestModal] = useState(false);
   const [requestMsg,   setRequestMsg]   = useState("");
   const [requests,     setRequests]     = useState([]);
+  const [clubPosts,    setClubPosts]    = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+
+
+  // Add useEffect for posts tab:
+useEffect(() => {
+  if (activeTab !== "Posts" || !club) return;
+  const load = async () => {
+    setPostsLoading(true);
+    try {
+      const { data } = await postApi.getFeed({
+        limit: 10,
+        // Posts where club._id matches
+      });
+      // Filter to this club's posts
+      setClubPosts(
+        (data.data?.posts ?? []).filter(
+          (p) => p.club?._id === club._id || p.club === club._id
+        )
+      );
+    } catch { /* non-critical */ }
+    finally { setPostsLoading(false); }
+  };
+  load();
+}, [activeTab, club]);
+
+// Add Posts tab content inside the tabs panel:
+{activeTab === "Posts" && (
+  <div className="space-y-4">
+    {postsLoading && [1,2].map((i) => <PostSkeleton key={i} />)}
+    {!postsLoading && clubPosts.length === 0 && (
+      <EmptyState
+        icon={BookOpen}
+        title="No posts yet"
+        description="This club hasn't shared any posts"
+      />
+    )}
+    {clubPosts.map((post) => (
+      <PostCard key={post._id} post={post} />
+    ))}
+  </div>
+)}
 
   // ── Fetch club ──────────────────────────────────────────────────────────────
   useEffect(() => {

@@ -112,50 +112,61 @@ const ClubsPage = () => {
   const sentinelRef = useInfiniteScroll(loadMore, hasMore, loading);
 
   // ── Handle join / leave ─────────────────────────────────────────────────────
+
+  const sid = (id) => id?.toString() ?? id;
+
   const handleJoin = useCallback(async (club) => {
-    const prev = joinStatus[club._id];
+  const id   = sid(club._id);
+  const prev = joinStatus[id];
 
-    // Optimistic
-    setJoinStatus((p) => ({
-      ...p,
-      [club._id]: club.isPrivate ? "pending" : "joined",
-    }));
+  // Optimistic update
+  setJoinStatus((p) => ({
+    ...p,
+    [id]: club.isPrivate ? "pending" : "joined",
+  }));
 
-    try {
-      const { data } = await clubApi.joinClub(club._id);
-      const status   = data.data.status; // "joined" | "pending"
-      setJoinStatus((p) => ({ ...p, [club._id]: status }));
+  try {
+    const { data } = await clubApi.joinClub(id);
+    const status   = data.data?.status ?? (club.isPrivate ? "pending" : "joined");
 
-      if (status === "joined") {
-        toast.success(`Welcome to ${club.name}!`);
-        setMyClubs((p) => [...p, club]);
-      } else {
-        toast.success("Join request sent!");
-      }
-    } catch (err) {
-      setJoinStatus((p) => ({ ...p, [club._id]: prev }));
-      toast.error(err.response?.data?.message ?? "Failed to join club");
+    setJoinStatus((p) => ({ ...p, [id]: status }));
+
+    if (status === "joined") {
+      toast.success(`Welcome to ${club.name}!`);
+      setMyClubs((p) => [
+        ...p,
+        { ...club, _id: id, memberCount: (club.memberCount ?? 0) + 1 },
+      ]);
+    } else {
+      toast.success("Join request sent to the admin!");
     }
-  }, [joinStatus]);
+  } catch (err) {
+    // Roll back
+    setJoinStatus((p) => ({ ...p, [id]: prev }));
+    toast.error(err.response?.data?.message ?? "Failed to join");
+  }
+}, [joinStatus]);
 
   const handleLeave = useCallback(async (club) => {
-    if (!window.confirm(`Leave ${club.name}?`)) return;
-    try {
-      await clubApi.leaveClub(club._id);
-      setJoinStatus((p) => ({ ...p, [club._id]: null }));
-      setMyClubs((p) => p.filter((c) => c._id !== club._id));
-      toast.success(`Left ${club.name}`);
-    } catch (err) {
-      toast.error(err.response?.data?.message ?? "Failed to leave");
-    }
-  }, []);
+  const id = sid(club._id);
+  if (!window.confirm(`Leave ${club.name}?`)) return;
+  try {
+    await clubApi.leaveClub(id);
+    setJoinStatus((p) => ({ ...p, [id]: null }));
+    setMyClubs((p) => p.filter((c) => sid(c._id) !== id));
+    toast.success(`Left ${club.name}`);
+  } catch (err) {
+    toast.error(err.response?.data?.message ?? "Failed to leave");
+  }
+}, []);
 
   // Compute status for a club
   const getStatus = (club) => {
-    if (joinStatus[club._id] !== undefined) return joinStatus[club._id];
-    const isMember = myClubs.some((c) => c._id === club._id);
-    return isMember ? "joined" : null;
-  };
+  const id = sid(club._id);
+  if (joinStatus[id] !== undefined) return joinStatus[id];
+  const isMember = myClubs.some((c) => sid(c._id) === id);
+  return isMember ? "joined" : null;
+};
 
   const CATEGORY_OPTIONS = [
     { value: "", label: "All" },
@@ -280,16 +291,16 @@ const ClubsPage = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {clubs
-              .filter((c) => !myClubs.some((m) => m._id === c._id))
-              .map((club) => (
-                <ClubCard
-                  key={club._id}
-                  club={club}
-                  status={getStatus(club)}
-                  onJoin={handleJoin}
-                  onLeave={handleLeave}
-                />
-              ))}
+  .filter((c) => !myClubs.some((m) => sid(m._id) === sid(c._id)))
+  .map((club) => (
+    <ClubCard
+      key={sid(club._id)}
+      club={{ ...club, _id: sid(club._id) }}  
+      status={getStatus(club)}
+      onJoin={handleJoin}
+      onLeave={handleLeave}
+    />
+  ))}
 
             {loading && Array.from({ length: 4 }).map((_, i) => (
               <ClubSkeleton key={i} />
@@ -324,7 +335,7 @@ const MyClubRow = ({ club, userId, onLeave }) => {
 
       <div className="flex-1 min-w-0">
         <Link
-          to={`/clubs/${club.slug}`}
+          to={`/clubs/${club.slug ?? club._id}`}
           className="font-medium text-sm text-gray-900
                      hover:text-indigo-600 transition line-clamp-1"
         >

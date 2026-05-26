@@ -61,12 +61,18 @@ const processAndUpload = async (file, folder, options = {}) => {
 
 // Avatar: square crop, 400x400
 export const handleAvatarUpload = catchAsync(async (req, res, next) => {
-  if (!req.file) return next(); // optional — profile update may not include photo
+  const file =
+    req.file ??
+    (Array.isArray(req.files)
+      ? req.files.find((f) => f.fieldname === "logo" || f.fieldname === "avatar" || f.fieldname === "profilePicture")
+      : req.files?.logo?.[0] ?? req.files?.avatar?.[0] ?? req.files?.profilePicture?.[0]);
+
+  if (!file) return next();
 
   const result = await processAndUpload(
-    req.file,
+    file.buffer,
     CLOUDINARY_FOLDERS.AVATARS,
-    { width: 400, height: 400, fit: "cover" } // square crop for avatars
+    { width: 400, height: 400, fit: "cover" }
   );
 
   req.uploadedFile = {
@@ -78,10 +84,18 @@ export const handleAvatarUpload = catchAsync(async (req, res, next) => {
 
 // Event / club banner: wide aspect, 1200x630 (Open Graph standard)
 export const handleBannerUpload = catchAsync(async (req, res, next) => {
-  if (!req.file) return next();
+  // .single() puts file in req.file
+  // .fields() puts files in req.files["banner"][0]
+  const file =
+    req.file ??
+    (Array.isArray(req.files)
+      ? req.files.find((f) => f.fieldname === "banner")
+      : req.files?.banner?.[0]);
+
+  if (!file) return next();
 
   const result = await processAndUpload(
-    req.file,
+    file.buffer,
     req.uploadFolder ?? CLOUDINARY_FOLDERS.EVENT_BANNERS,
     { width: 1200, height: 630, fit: "cover" }
   );

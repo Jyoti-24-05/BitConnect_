@@ -6,6 +6,8 @@ import { ApiError }              from "../utils/ApiError.js";
 import { NOTIFICATION_TYPES }    from "../models/Notification.model.js";
 import { getIO }                 from "../sockets/index.js";
 import { pushNotification }      from "../sockets/handlers/notif.handler.js";
+import Notification from "../models/Notification.model.js";
+import { SOCKET_EVENTS } from "../sockets/index.js";
 
 // ─── Create club ──────────────────────────────────────────────────────────────
 export const createClub = async ({
@@ -70,16 +72,30 @@ export const discoverClubs = async ({ category, cursor, limit = 12 } = {}) => {
 };
 
 // ─── Get club by slug ─────────────────────────────────────────────────────────
-export const getClubBySlug = async (slug) => {
-  const club = await Club.findOne({ slug, isActive: true })
-    .populate("admin",           "username profilePicture isVerified")
-    .populate("members.user",    "username profilePicture isVerified")
-    .populate("createdBy",       "username");
+export const getClubBySlug = async (slugOrId) => {
+  const populate = [
+    { path: "admin",        select: "username profilePicture isVerified" },
+    { path: "members.user", select: "username profilePicture isVerified" },
+    { path: "createdBy",    select: "username" },
+  ];
+
+  // Try slug first
+  let club = await Club.findOne({ slug: slugOrId, isActive: true })
+    .populate("admin",              "username profilePicture isVerified")
+    .populate("members.user",       "username profilePicture isVerified")
+    .populate("joinRequests.user",  "username profilePicture")  
+    .populate("createdBy",          "username");
+  // Fallback: try by _id for clubs that don't have a slug yet
+  if (!club && /^[a-f\d]{24}$/i.test(slugOrId)) {
+    club = await Club.findOne({ _id: slugOrId, isActive: true })
+      .populate(populate[0].path, populate[0].select)
+      .populate(populate[1].path, populate[1].select)
+      .populate(populate[2].path, populate[2].select);
+  }
 
   if (!club) throw new ApiError(404, "Club not found");
   return club;
 };
-
 // ─── Update club ──────────────────────────────────────────────────────────────
 export const updateClub = async (clubId, userId, updateData) => {
   const club = await Club.findById(clubId);
@@ -106,53 +122,122 @@ export const updateClub = async (clubId, userId, updateData) => {
 };
 
 // ─── Join / request to join club ─────────────────────────────────────────────
+// ─── Join / request to join club ─────────────────────────────────────────────
 export const joinClub = async (clubId, userId, message = "") => {
   const club = await Club.findById(clubId);
-  if (!club)         throw new ApiError(404, "Club not found");
-  if (!club.isActive) throw new ApiError(400, "This club is no longer active");
+
+  if (!club)
+    throw new ApiError(404, "Club not found");
+
+  if (!club.isActive)
+    throw new ApiError(400, "This club is no longer active");
 
   const status = club.getMemberStatus(userId);
-  if (status !== "not_member") throw new ApiError(409, "You are already a member of this club");
 
-  // Check for existing pending request
-  const hasPendingRequest = club.joinRequests.some(
-    (r) => r.user.toString() === userId.toString() && r.status === "pending"
-  );
-  if (hasPendingRequest) throw new ApiError(409, "You already have a pending join request");
-
-  const io = getIO();
-
-  if (!club.isPrivate) {
-    // Public club — join immediately
-    await club.addMember(userId);
-    await pushNotification(io, {
-      recipient: club.admin,
-      sender:    userId,
-      type:      NOTIFICATION_TYPES.CLUB_JOIN_REQUEST,
-      message:   `joined your club "${club.name}"`,
-      refId:     club._id,
-      refModel:  "Club",
-    });
-    return { status: "joined", message: `You have joined ${club.name}` };
+  if (status !== "not_member") {
+    throw new ApiError(409, "You are already a member of this club");
   }
 
-  // Private club — add join request
-  club.joinRequests.push({ user: userId, message, status: "pending" });
-  await club.save({ validateBeforeSave: false });
+  const hasPendingRequest = club.joinRequests.some(
+    (r) =>
+      r.user.toString() === userId.toString() &&
+      r.status === "pending"
+  );
 
-  // Notify club admin
-  await pushNotification(io, {
-    recipient: club.admin,
-    sender:    userId,
-    type:      NOTIFICATION_TYPES.CLUB_JOIN_REQUEST,
-    message:   `requested to join "${club.name}"`,
-    refId:     club._id,
-    refModel:  "Club",
+  if (hasPendingRequest) {
+    throw new ApiError(
+      409,
+      "You already have a pending join request"
+    );
+  }
+
+  // ── Public club ───────────────────────────────────────────────────────────
+  if (!club.isPrivate) {
+    await club.addMember(userId);
+
+    // Non-critical notification
+    try {
+      const io = getIO();
+
+      await pushNotification(io, {
+        recipient: club.admin,
+        sender: userId,
+        type: NOTIFICATION_TYPES.CLUB_JOIN_REQUEST,
+        message: `joined your club "${club.name}"`,
+        ref: {
+          refId: club._id,
+          refModel: "Club",
+        },
+      });
+    } catch (err) {
+      console.warn(
+        "[Club] Notification failed (non-critical):",
+        err.message
+      );
+    }
+
+    return {
+      status: "joined",
+      message: `You have joined ${club.name}`,
+      memberCount: club.members.filter(
+        (m) => m.status === "active"
+      ).length,
+    };
+  }
+
+  // ── Private club — save join request ─────────────────────────────────────
+  club.joinRequests.push({
+    user: userId,
+    message,
+    status: "pending",
   });
 
-  return { status: "pending", message: "Join request sent — waiting for admin approval" };
-};
+  await club.save({ validateBeforeSave: false });
 
+  // Save notification to DB — MUST succeed independently of socket
+  try {
+    await Notification.create({
+      recipient: club.admin.toString(),
+      sender: userId.toString(),
+      type: NOTIFICATION_TYPES.CLUB_JOIN_REQUEST,
+      message: `requested to join "${club.name}"`,
+      ref: {
+        refId: club._id,
+        refModel: "Club",
+      },
+    });
+  } catch (err) {
+    // Ignore duplicate notification errors
+    if (err.code !== 11000) {
+      console.error(
+        "[Club] Failed to save notification:",
+        err.message
+      );
+    }
+  }
+
+  // Real-time socket push — optional
+  try {
+    const io = getIO();
+
+    io.to(`user:${club.admin.toString()}`).emit(
+      SOCKET_EVENTS.NEW_NOTIFICATION,
+      {
+        type: NOTIFICATION_TYPES.CLUB_JOIN_REQUEST,
+        message: `requested to join "${club.name}"`,
+        refId: club._id,
+      }
+    );
+  } catch {
+    // Socket unavailable — DB notification still exists
+  }
+
+  return {
+    status: "pending",
+    message:
+      "Join request sent — waiting for admin approval",
+  };
+};
 // ─── Handle join request (approve / reject) ───────────────────────────────────
 export const handleJoinRequest = async (clubId, requestUserId, adminId, action) => {
   const club = await Club.findById(clubId);

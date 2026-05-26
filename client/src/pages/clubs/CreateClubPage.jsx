@@ -6,11 +6,14 @@ import { zodResolver }      from "@hookform/resolvers/zod";
 import { z }                from "zod";
 import { Image, X,
          ArrowLeft, Lock,
-         Globe }            from "lucide-react";
+         Globe, Users }            from "lucide-react";
 import { clubApi }          from "@/api/clubApi";
 import { CLUB_CATEGORIES }  from "@/utils/constants";
 import cn                   from "@/utils/cn";
 import toast                from "react-hot-toast";
+import { Navigate }         from "react-router-dom";
+import useAuth              from "@/hooks/useAuth";
+import { Link }       from "react-router-dom";
 
 const schema = z.object({
   name:        z.string().min(3, "Min 3 characters").max(80),
@@ -40,10 +43,11 @@ const inputCls = "w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm o
 
 const CreateClubPage = () => {
   const navigate              = useNavigate();
+  const { isClub, isAdmin }   = useAuth();
   const [loading, setLoading] = useState(false);
   const [logo,    setLogo]    = useState(null);
   const [preview, setPreview] = useState(null);
-  const [isPrivate, setIsPrivate] = useState(false); // ← plain state, not form field
+  const [isPrivate, setIsPrivate] = useState(false);
 
   const {
     register, handleSubmit,
@@ -99,7 +103,33 @@ const CreateClubPage = () => {
       setLoading(false);
     }
   };
-
+  if (!isClub && !isAdmin) {
+    return (
+      <div className="max-w-lg mx-auto">
+        <div className="bg-white rounded-2xl border border-gray-100
+                        shadow-sm p-12 text-center">
+          <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center
+                          justify-center mx-auto mb-4">
+            <Users className="w-8 h-8 text-indigo-400" />
+          </div>
+          <h2 className="font-semibold text-gray-900 mb-2">
+            Club accounts only
+          </h2>
+          <p className="text-sm text-gray-500 mb-5">
+            Only registered club/organisation accounts can create clubs.
+            Register with role <strong>Club</strong> to create one.
+          </p>
+          <button
+            onClick={() => navigate("/clubs")}
+            className="px-5 py-2 bg-indigo-600 text-white rounded-xl
+                       text-sm font-medium hover:bg-indigo-700 transition"
+          >
+            Browse clubs
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       <button

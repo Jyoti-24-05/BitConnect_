@@ -21,7 +21,9 @@ router.use(authenticate);
 //create club
 router.post(
   "/",
-  (req, res, next) => avatarUpload.single("logo")(req, res, next),
+  authorize("club", "admin"), // only users with club:create can create clubs
+(req, res, next) =>
+  avatarUpload.fields([{ name: "logo", maxCount: 1 }])(req, res, next),
   handleMulterError,
   handleAvatarUpload,
   ClubCtrl.createClub
@@ -35,7 +37,8 @@ router.post("/:clubId/leave", ClubCtrl.leaveClub);
 // Actual role check is inside service (getMemberStatus) for finer control
 router.patch(
   "/:clubId",
-  (req, res, next) => avatarUpload.single("logo")(req, res, next),
+  (req, res, next) =>
+  avatarUpload.fields([{ name: "logo", maxCount: 1 }])(req, res, next),
   handleMulterError,
   handleAvatarUpload,
   ClubCtrl.updateClub

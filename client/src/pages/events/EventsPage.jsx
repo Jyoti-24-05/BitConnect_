@@ -352,7 +352,7 @@ const EventsPage = () => {
 
       {!hasMore && !loading && displayed.length > 0 && (
         <p className="text-center text-sm text-gray-400 py-6">
-          All events loaded 🎉
+          All events loaded 
         </p>
       )}
     </div>

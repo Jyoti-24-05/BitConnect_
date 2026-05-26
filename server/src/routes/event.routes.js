@@ -5,11 +5,12 @@ import { authenticate,
          authorize }          from "../middleware/authenticate.js";
 import { avatarUpload,
          handleAvatarUpload,
-         handleMulterError }  from "../middleware/upload.js";
+         handleMulterError,handleBannerUpload }  from "../middleware/upload.js";
 import Club                   from "../models/Club.model.js";
 import { ApiResponse }        from "../utils/ApiResponse.js";
 import { ApiError }           from "../utils/ApiError.js";
 import { catchAsync }         from "../utils/catchAsync.js";
+import multer from "multer";
 
 const router = Router();
 
@@ -24,10 +25,23 @@ router.use(authenticate);
 // ── Create club ───────────────────────────────────────────────────────────────
 router.post(
   "/",
-  (req, res, next) => avatarUpload.single("logo")(req, res, next),
-  handleMulterError,
-  handleAvatarUpload,
-  ClubCtrl.createClub
+  authorize("club", "admin"),
+  (req, res, next) => {
+    bannerUpload.single("banner")(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === "LIMIT_FILE_SIZE")
+          return next(new ApiError(400, "Banner too large — max 5MB"));
+        // Any other multer error (including Unexpected field) — skip banner, continue
+        console.warn("[Upload] Banner skipped:", err.message);
+        return next();
+      }
+      if (err) return next(err);
+      next();
+    });
+  },
+  handleBannerUpload,
+  validate(createEventSchema),
+  EventCtrl.createEvent
 );
 
 // ── Membership ────────────────────────────────────────────────────────────────
@@ -46,6 +60,7 @@ router.patch(
 router.patch("/:clubId/requests/:userId", ClubCtrl.handleJoinRequest);
 router.patch("/:clubId/members/:userId/role", ClubCtrl.updateMemberRole);
 
+
 // ── Admin only — verify a club ────────────────────────────────────────────────
 router.patch(
   "/:clubId/verify",
@@ -60,5 +75,7 @@ router.patch(
     res.status(200).json(new ApiResponse(200, club, "Club verified"));
   })
 );
+
+
 
 export default router;

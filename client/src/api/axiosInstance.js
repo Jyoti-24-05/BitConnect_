@@ -6,27 +6,34 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1";
 const axiosInstance = axios.create({
   baseURL:         BASE_URL,
   withCredentials: true,
-  headers:         { "Content-Type": "application/json" },
   timeout:         15000,
+  // ← NO default Content-Type here — set it dynamically below
 });
 
-// Attach token to every request
+// ── Request interceptor ───────────────────────────────────────────────────────
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = window.__accessToken__;
     if (token) config.headers.Authorization = `Bearer ${token}`;
+
+    // FormData: let browser set Content-Type with the correct boundary
+    // Everything else: JSON
+    if (config.data instanceof FormData) {
+      // Explicitly delete to prevent any inherited header from interfering
+      delete config.headers["Content-Type"];
+      delete config.headers.common?.["Content-Type"];
+      delete config.headers.post?.["Content-Type"];
+    } else {
+      config.headers["Content-Type"] = "application/json";
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// These URLs must never trigger a refresh retry
-const SKIP_REFRESH_URLS = [
-  "/auth/refresh",
-  "/auth/login",
-  "/auth/register",
-  "/auth/logout",
-];
+// ── Response interceptor ──────────────────────────────────────────────────────
+const SKIP_REFRESH = ["/auth/refresh", "/auth/login", "/auth/register", "/auth/logout"];
 
 let isRefreshing = false;
 let failedQueue  = [];
@@ -47,7 +54,7 @@ axiosInstance.interceptors.response.use(
     const shouldSkip =
       error.response?.status !== 401 ||
       original._retry ||
-      SKIP_REFRESH_URLS.some((u) => url.includes(u));
+      SKIP_REFRESH.some((u) => url.includes(u));
 
     if (shouldSkip) return Promise.reject(error);
 

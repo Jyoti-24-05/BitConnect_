@@ -16,6 +16,8 @@ const CATEGORY_COLORS = {
 const ClubCard = ({ club, status, onJoin, onLeave }) => {
   const isJoined  = status === "joined";
   const isPending = status === "pending";
+  const clubPath = `/clubs/${club.slug ?? club._id}`;
+
 
   return (
     <article className="bg-white rounded-2xl border border-gray-100
@@ -40,7 +42,7 @@ const ClubCard = ({ club, status, onJoin, onLeave }) => {
         {/* Name + verified */}
         <div className="flex items-start justify-between gap-2 mb-1">
           <Link
-            to={`/clubs/${club.slug}`}
+            to={clubPath}
             className="font-semibold text-gray-900 hover:text-indigo-600
                        transition line-clamp-1"
           >
@@ -92,40 +94,38 @@ const ClubCard = ({ club, status, onJoin, onLeave }) => {
         {isJoined ? (
           <div className="flex gap-2">
             <Link
-              to={`/clubs/${club.slug}`}
+              to={clubPath}
               className="flex-1 text-center py-2 bg-indigo-50 text-indigo-700
-                         text-xs font-medium rounded-xl hover:bg-indigo-100
-                         transition"
+                 text-xs font-medium rounded-xl hover:bg-indigo-100 transition"
             >
               View club
             </Link>
             <button
               onClick={() => onLeave(club)}
               className="px-3 py-2 text-xs text-gray-400 border border-gray-200
-                         rounded-xl hover:text-red-500 hover:border-red-200
-                         transition"
-            >
-              Leave
-            </button>
-          </div>
-        ) : isPending ? (
-          <button
-            disabled
-            className="w-full py-2 bg-amber-50 text-amber-700 text-xs
-                       font-medium rounded-xl border border-amber-100
-                       cursor-not-allowed"
-          >
-            Request sent · Pending approval
-          </button>
-        ) : (
-          <button
-            onClick={() => onJoin(club)}
-            className="w-full py-2 bg-indigo-600 text-white text-xs
-                       font-medium rounded-xl hover:bg-indigo-700 transition"
-          >
-            {club.isPrivate ? "Request to join" : "Join club"}
-          </button>
-        )}
+                 rounded-xl hover:text-red-500 hover:border-red-200 transition"
+    >
+      Leave
+    </button>
+  </div>
+) : isPending ? (
+  <button disabled
+          className="w-full py-2 bg-amber-50 text-amber-700 text-xs
+                     font-medium rounded-xl border border-amber-100
+                     cursor-not-allowed">
+    Request sent · Pending approval
+  </button>
+) : (
+  <button
+    onClick={() => onJoin(club)}
+    className="w-full py-2 bg-indigo-600 text-white text-xs
+               font-medium rounded-xl hover:bg-indigo-700 transition"
+  >
+    {club.isPrivate ? "Request to join" : "Join club"}
+  </button>
+)}
+
+        
       </div>
     </article>
   );

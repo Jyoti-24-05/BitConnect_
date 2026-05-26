@@ -146,18 +146,45 @@ clubSchema.pre("save", async function () {
 
 // Discover clubs — filterable by category
 clubSchema.statics.discover = function ({ category, limit = 12, cursor } = {}) {
-  const filter = {
+  const match = {
     isActive: true,
     ...(category && { category }),
     ...(cursor && { createdAt: { $lt: new Date(cursor) } }),
   };
-  return this.find(filter)
-    .sort({ isVerified: -1, createdAt: -1 })
-    .limit(limit)
-    .select("name slug logo category memberCount isVerified description tags")
-    .lean();
-};
 
+  return this.aggregate([
+    { $match: match },
+    {
+      $addFields: {
+        memberCount: {
+          $size: {
+            $filter: {
+              input: "$$ROOT.members",
+              as:    "m",
+              cond:  { $eq: ["$$m.status", "active"] },
+            },
+          },
+        },
+      },
+    },
+    { $sort: { isVerified: -1, createdAt: -1 } },
+    { $limit: Number(limit) },
+    {
+      $project: {
+        name:        1,
+        slug:        1,
+        logo:        1,
+        category:    1,
+        isVerified:  1,
+        isPrivate:   1,
+        description: 1,
+        tags:        1,
+        memberCount: 1,
+        createdAt:   1,
+      },
+    },
+  ]);
+};
 // ─── Instance methods ─────────────────────────────────────────────────────────
 
 // Check membership status for a user

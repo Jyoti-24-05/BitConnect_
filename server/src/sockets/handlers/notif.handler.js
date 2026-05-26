@@ -22,18 +22,35 @@ export const registerNotifHandlers = (io, socket) => {
 
 // Called from controllers to push a notification to a specific user
 // Usage: await pushNotification({ recipient, type, message, refId, refModel })
-export const pushNotification = async (io, { recipient, type, message, refId, refModel }) => {
-  const notif = await Notification.create({ recipient, type, message, refId, refModel });
+export const pushNotification = async (io, {
+  recipient, sender, type, message, ref,
+}) => {
+  try {
+    // Convert to string — ObjectId.toString() gives the 24-char hex string
+    const recipientId = recipient?.toString() ?? recipient;
 
-  // Emit to that user's personal room — works even if they have multiple tabs open
-  io.to(`user:${recipient}`).emit(SOCKET_EVENTS.NEW_NOTIFICATION, {
-    _id:     notif._id,
-    type,
-    message,
-    refId,
-    refModel,
-    createdAt: notif.createdAt,
-  });
+    const notif = await Notification.createSafe({
+      recipient: recipientId,
+      sender:    sender?.toString() ?? null,
+      type,
+      message,
+      ref: ref ?? {},
+    });
 
-  return notif;
+    if (!notif) return null; // duplicate — already exists
+
+    // recipientId MUST be a string for the room name to match
+    io.to(`user:${recipientId}`).emit(SOCKET_EVENTS.NEW_NOTIFICATION, {
+      _id:       notif._id,
+      type,
+      message,
+      ref,
+      createdAt: notif.createdAt,
+    });
+
+    return notif;
+  } catch (err) {
+    console.error("[pushNotification] failed:", err.message);
+    return null;
+  }
 };
