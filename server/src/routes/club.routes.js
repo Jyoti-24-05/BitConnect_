@@ -1,83 +1,65 @@
 // server/src/routes/club.routes.js
-import { Router }             from "express";
-import * as ClubCtrl          from "../controllers/club.controller.js";
+import { Router }           from "express";
+import * as ClubCtrl        from "../controllers/club.controller.js";
 import { authenticate,
-         authorize }          from "../middleware/authenticate.js";
-import validate               from "../middleware/validate.js";
+         authorize }        from "../middleware/authenticate.js";
 import { avatarUpload,
          handleAvatarUpload,
-         handleMulterError }  from "../middleware/upload.js";
+         handleMulterError } from "../middleware/upload.js";
+import Club                 from "../models/Club.model.js";
+import { ApiResponse }      from "../utils/ApiResponse.js";
+import { ApiError }         from "../utils/ApiError.js";
+import { catchAsync }       from "../utils/catchAsync.js";
 
 const router = Router();
 
-// ─── Public routes ────────────────────────────────────────────────────────────
-router.get("/search",  ClubCtrl.searchClubs);
-router.get("/",        ClubCtrl.discoverClubs);
-router.get("/:slug",   ClubCtrl.getClub);     // slug not id — /clubs/coding-club-bit
+// ── Public ────────────────────────────────────────────────────────────────────
+router.get("/",       ClubCtrl.discoverClubs);
+router.get("/search", ClubCtrl.searchClubs);
+router.get("/:slug",  ClubCtrl.getClub);
 
-// ─── Protected routes ─────────────────────────────────────────────────────────
+// ── Auth required ─────────────────────────────────────────────────────────────
 router.use(authenticate);
 
-//create club
+// ── Create club (club/admin only) ─────────────────────────────────────────────
 router.post(
   "/",
-  authorize("club", "admin"), // only users with club:create can create clubs
-(req, res, next) =>
-  avatarUpload.fields([{ name: "logo", maxCount: 1 }])(req, res, next),
+  authorize("club", "admin"),
+  (req, res, next) => avatarUpload.single("logo")(req, res, next),
   handleMulterError,
   handleAvatarUpload,
   ClubCtrl.createClub
 );
 
-// ─── Membership actions — any authenticated user ──────────────────────────────
+// ── Membership ────────────────────────────────────────────────────────────────
 router.post("/:clubId/join",  ClubCtrl.joinClub);
 router.post("/:clubId/leave", ClubCtrl.leaveClub);
 
-// ─── Club admin actions ───────────────────────────────────────────────────────
-// Actual role check is inside service (getMemberStatus) for finer control
+// ── Club management ───────────────────────────────────────────────────────────
 router.patch(
   "/:clubId",
-  (req, res, next) =>
-  avatarUpload.fields([{ name: "logo", maxCount: 1 }])(req, res, next),
+  (req, res, next) => avatarUpload.single("logo")(req, res, next),
   handleMulterError,
   handleAvatarUpload,
   ClubCtrl.updateClub
 );
 
-router.patch(
-  "/:clubId/requests/:userId",
-  ClubCtrl.handleJoinRequest
-);
+router.patch("/:clubId/requests/:userId", ClubCtrl.handleJoinRequest);
+router.patch("/:clubId/members/:userId/role", ClubCtrl.updateMemberRole);
 
-router.patch(
-  "/:clubId/members/:userId/role",
-  ClubCtrl.updateMemberRole
-);
-
-// ─── Platform admin only — verify a club ─────────────────────────────────────
+// ── Admin only — verify a club ────────────────────────────────────────────────
 router.patch(
   "/:clubId/verify",
   authorize("admin"),
-  async (req, res, next) => {
-    try{
-    // Inline — too small to warrant its own controller method
-    const Club = (await import("../models/Club.model.js")).default;
-    const { ApiResponse } = await import("../utils/ApiResponse.js");
+  catchAsync(async (req, res) => {
     const club = await Club.findByIdAndUpdate(
       req.params.clubId,
       { isVerified: true },
       { new: true }
     );
-    if (!club) {
-  throw new ApiError(404, "Club not found");
-  }
-  res.status(200).json(new ApiResponse(200, club, "Club verified successfully")
-  );
-  }
-  catch(err){
-    next(err);
-  }
-}
+    if (!club) throw new ApiError(404, "Club not found");
+    res.status(200).json(new ApiResponse(200, club, "Club verified"));
+  })
 );
 
 export default router;

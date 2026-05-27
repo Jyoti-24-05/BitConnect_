@@ -1,16 +1,22 @@
-// server/src/validators/event.validator.js
+// server/src/validators/event.validator.js — replace entirely
+
 import { z } from "zod";
 
-// ─── Reusable ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const futureDateField = (label) =>
   z.coerce
     .date({ required_error: `${label} is required` })
-    .refine((date) => date > new Date(), {
-      message: `${label} must be in the future`,
-    });
+    .refine((d) => d > new Date(), { message: `${label} must be in the future` });
 
-// ─── Schemas ──────────────────────────────────────────────────────────────────
+// Accepts boolean OR "true"/"false" string (FormData always sends strings)
+const coercedBoolean = z
+  .union([z.boolean(), z.string()])
+  .transform((val) => val === true || val === "true")
+  .optional()
+  .default(false);
 
+// ─── Create event ─────────────────────────────────────────────────────────────
 export const createEventSchema = z
   .object({
     title: z
@@ -26,26 +32,28 @@ export const createEventSchema = z
       .max(2000, "Description cannot exceed 2000 characters"),
 
     category: z.enum(
-      ["workshop", "seminar", "hackathon", "cultural", "sports", "networking", "other"],
+      ["workshop","seminar","hackathon","cultural","sports","networking","other"],
       { errorMap: () => ({ message: "Invalid event category" }) }
     ),
 
     tags: z
-      .array(z.string().trim().toLowerCase().max(30))
-      .max(5, "Maximum 5 tags allowed")
+      .union([
+        z.array(z.string().trim().toLowerCase().max(30)),
+        z.string(),
+      ])
       .optional()
-      .default([]),
+      .transform((val) => {
+        if (!val) return [];
+        if (Array.isArray(val)) return val.filter(Boolean);
+        return val.split(",").map((t) => t.trim()).filter(Boolean);
+      }),
 
     venue: z
       .object({
         name:        z.string().trim().max(100).optional(),
         address:     z.string().trim().max(200).optional(),
-        isOnline:    z.boolean().optional().default(false),
-        meetingLink: z
-          .string()
-          .url("Invalid meeting link URL")
-          .optional()
-          .or(z.literal("")),
+        isOnline:    coercedBoolean,               // ← handles "true"/"false"
+        meetingLink: z.string().url("Invalid meeting link").optional().or(z.literal("")),
       })
       .optional(),
 
@@ -54,11 +62,14 @@ export const createEventSchema = z
     rsvpDeadline: z.coerce.date().optional(),
 
     capacity: z
-      .number()
-      .int("Capacity must be a whole number")
-      .min(1, "Capacity must be at least 1")
+      .union([z.number(), z.string()])
       .optional()
-      .nullable(),
+      .nullable()
+      .transform((val) => {
+        if (val === null || val === "" || val === undefined) return null;
+        const n = parseInt(String(val), 10);
+        return isNaN(n) ? null : n;
+      }),
 
     clubId: z
       .string()
@@ -70,78 +81,74 @@ export const createEventSchema = z
       .optional()
       .default("draft"),
   })
-  // Cross-field validation — endDate must be after startDate
-  .refine((data) => data.endDate > data.startDate, {
+  .refine((d) => d.endDate > d.startDate, {
     message: "End date must be after start date",
     path:    ["endDate"],
   })
-  // rsvpDeadline must be before startDate
   .refine(
-    (data) => !data.rsvpDeadline || data.rsvpDeadline < data.startDate,
-    {
-      message: "RSVP deadline must be before event start date",
-      path:    ["rsvpDeadline"],
-    }
+    (d) => !d.rsvpDeadline || d.rsvpDeadline < d.startDate,
+    { message: "RSVP deadline must be before event start date", path: ["rsvpDeadline"] }
   )
-  // Online events need a meeting link
   .refine(
-    (data) => !data.venue?.isOnline || !!data.venue?.meetingLink,
-    {
-      message: "Meeting link is required for online events",
-      path:    ["venue", "meetingLink"],
-    }
+    (d) => !d.venue?.isOnline || !!d.venue?.meetingLink,
+    { message: "Meeting link is required for online events", path: ["venue","meetingLink"] }
   );
 
+// ─── Update event ─────────────────────────────────────────────────────────────
 export const updateEventSchema = z
   .object({
-    title: z
-      .string()
-      .trim()
-      .min(3,   "Title must be at least 3 characters")
-      .max(120, "Title cannot exceed 120 characters")
-      .optional(),
-    description: z
-      .string()
-      .trim()
-      .min(20,   "Description must be at least 20 characters")
-      .max(2000, "Description cannot exceed 2000 characters")
-      .optional(),
+    title: z.string().trim().min(3).max(120).optional(),
+    description: z.string().trim().min(20).max(2000).optional(),
     category: z
-      .enum(["workshop", "seminar", "hackathon", "cultural", "sports", "networking", "other"])
+      .enum(["workshop","seminar","hackathon","cultural","sports","networking","other"])
       .optional(),
     tags: z
-      .array(z.string().trim().toLowerCase().max(30))
-      .max(5)
-      .optional(),
+      .union([z.array(z.string().trim().toLowerCase().max(30)), z.string()])
+      .optional()
+      .transform((val) => {
+        if (!val) return undefined;
+        if (Array.isArray(val)) return val.filter(Boolean);
+        return val.split(",").map((t) => t.trim()).filter(Boolean);
+      }),
     venue: z
       .object({
         name:        z.string().trim().max(100).optional(),
         address:     z.string().trim().max(200).optional(),
-        isOnline:    z.boolean().optional(),
+        isOnline:    coercedBoolean,
         meetingLink: z.string().url().optional().or(z.literal("")),
       })
       .optional(),
     startDate:    z.coerce.date().optional(),
     endDate:      z.coerce.date().optional(),
     rsvpDeadline: z.coerce.date().optional().nullable(),
-    capacity:     z.number().int().min(1).optional().nullable(),
-    status:       z.enum(["draft", "published", "cancelled"]).optional(),
-    isFeatured:   z.boolean().optional(),
+    capacity: z
+      .union([z.number(), z.string()])
+      .optional()
+      .nullable()
+      .transform((val) => {
+        if (val === null || val === "" || val === undefined) return null;
+        const n = parseInt(String(val), 10);
+        return isNaN(n) ? null : n;
+      }),
+    status:     z.enum(["draft","published","cancelled"]).optional(),
+    isFeatured: coercedBoolean,
   })
   .refine(
-    (data) => {
-      if (data.startDate && data.endDate) return data.endDate > data.startDate;
-      return true; // only validate if both are present
+    (d) => {
+      if (d.startDate && d.endDate) return d.endDate > d.startDate;
+      return true;
     },
     { message: "End date must be after start date", path: ["endDate"] }
   );
 
+// ─── RSVP ─────────────────────────────────────────────────────────────────────
 export const rsvpSchema = z.object({
-  status: z.enum(["going", "interested", "not_going"], {
+  status: z.enum(["going","interested","not_going"], {
     errorMap: () => ({ message: "Status must be going, interested, or not_going" }),
   }),
 });
 
+// ─── Query ────────────────────────────────────────────────────────────────────
 export const getEventsQuerySchema = z.object({
   cursor:   z.string().optional(),
   limit: z
@@ -150,8 +157,8 @@ export const getEventsQuerySchema = z.object({
     .transform((val) => (val ? parseInt(val, 10) : 10))
     .pipe(z.number().min(1).max(50)),
   category: z
-    .enum(["workshop", "seminar", "hackathon", "cultural", "sports", "networking", "other"])
+    .enum(["workshop","seminar","hackathon","cultural","sports","networking","other"])
     .optional(),
   tags:     z.string().optional().transform((val) => val?.split(",").map((t) => t.trim())),
-  status:   z.enum(["draft", "published", "cancelled", "completed"]).optional(),
+  status:   z.enum(["draft","published","cancelled","completed"]).optional(),
 });

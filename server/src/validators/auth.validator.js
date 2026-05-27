@@ -77,36 +77,28 @@ export const changePasswordSchema = z
   });
 
 export const updateProfileSchema = z.object({
-  bio: z
-    .string()
-    .trim()
-    .max(200, "Bio cannot exceed 200 characters")
-    .optional(),
-  college: z
-    .string()
-    .trim()
-    .max(100)
-    .optional(),
+  bio: z.string().trim().max(200).optional(),
+  college: z.string().trim().max(100).optional(),
   graduationYear: z
     .union([z.string(), z.number()])
     .optional()
     .transform((v) => (v ? parseInt(String(v), 10) : undefined)),
   gender: z
-    .enum(["male", "female", "non-binary", "prefer-not-to-say", ""])
+    .enum(["male","female","non-binary","prefer-not-to-say",""])
     .optional(),
-  // Accept both array and single string — FormData quirk
   skills: z
-    .union([
-      z.array(z.string().trim().max(30)),
-      z.string().trim(),           // single value from FormData
-    ])
+    .union([z.array(z.string().trim()), z.string()])
     .optional()
     .transform((val) => {
       if (!val) return [];
       if (Array.isArray(val)) return val.filter(Boolean);
-      return val.split(",").map((s) => s.trim()).filter(Boolean);
+      try {
+        const parsed = JSON.parse(val);
+        return Array.isArray(parsed) ? parsed : [val];
+      } catch {
+        return val.split(",").map((s) => s.trim()).filter(Boolean);
+      }
     }),
-  // socialLinks arrives as JSON string from FormData
   socialLinks: z
     .union([
       z.object({
@@ -114,7 +106,7 @@ export const updateProfileSchema = z.object({
         github:   z.string().optional().or(z.literal("")),
         twitter:  z.string().optional().or(z.literal("")),
       }),
-      z.string(), // JSON string from FormData
+      z.string(),
     ])
     .optional()
     .transform((val) => {

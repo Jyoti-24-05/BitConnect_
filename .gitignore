@@ -37,3 +37,8 @@ uploads
 
 # Redis dump
 dump.rdb
+
+server/.env
+server/node_modules
+client/node_modules
+client/src/.env
