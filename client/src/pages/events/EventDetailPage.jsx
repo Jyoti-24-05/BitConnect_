@@ -159,8 +159,7 @@ const EventDetailPage = () => {
       </button>
 
       {/* ── Main card ── */}
-      <div className="bg-white rounded-2xl border border-gray-100
-                      shadow-sm overflow-hidden">
+      <div className="card rounded-2xl overflow-hidden" style={{ background: "var(--card)" }}>
 
         {/* Banner */}
         {event.banner?.url ? (
@@ -244,7 +243,7 @@ const EventDetailPage = () => {
             <div className="flex items-start gap-3">
               <Calendar className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-semibold" style={{ color: "var(--tx-h)", fontFamily: "Syne, sans-serif" }}>
                   {formatEventDate(event.startDate)}
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">
@@ -264,7 +263,7 @@ const EventDetailPage = () => {
               <div className="flex items-start gap-3">
                 <Wifi className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Online event</p>
+                  <p className="text-sm font-semibold" style={{ color: "var(--tx-h)", fontFamily: "Syne, sans-serif" }}>Online event</p>
                   {myStatus === "going" && event.venue.meetingLink && (
                     <a
                       href={event.venue.meetingLink}
@@ -287,7 +286,7 @@ const EventDetailPage = () => {
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-semibold" style={{ color: "var(--tx-h)", fontFamily: "Syne, sans-serif" }}>
                     {event.venue?.name ?? "Venue TBD"}
                   </p>
                   {event.venue?.address && (
@@ -306,7 +305,7 @@ const EventDetailPage = () => {
                 <p className="text-sm text-gray-900">
                   <span className="font-medium">{event.rsvpCount ?? 0}</span>
                   {event.capacity && (
-                    <span className="text-gray-500">
+                    <span className="" style={{ color: "var(--tx-muted)" }}>
                       {" "}/ {event.capacity} going
                     </span>
                   )}

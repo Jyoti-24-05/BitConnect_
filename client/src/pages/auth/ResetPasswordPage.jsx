@@ -42,32 +42,29 @@ const ResetPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white
-                    flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden" style={{ background: "var(--bg)" }}>
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="card rounded-2xl" style={{ background: "var(--card)" }}>
           <h2 className="text-xl font-bold text-gray-900 mb-6">Set new password</h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: "var(--tx-muted)" }}>
                 New password
               </label>
               <input {...register("password")} type="password" placeholder="••••••••"
-                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl
-                                text-sm outline-none focus:ring-2 focus:ring-indigo-300 transition" />
+                     className="input-base w-full px-4 py-2.5 text-sm" />
               {errors.password && (
-                <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
+                <p className="text-xs mt-1" style={{ color: "var(--danger)" }}>{errors.password.message}</p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: "var(--tx-muted)" }}>
                 Confirm password
               </label>
               <input {...register("confirmPassword")} type="password" placeholder="••••••••"
-                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl
-                                text-sm outline-none focus:ring-2 focus:ring-indigo-300 transition" />
+                     className="input-base w-full px-4 py-2.5 text-sm" />
               {errors.confirmPassword && (
-                <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>
+                <p className="text-xs mt-1" style={{ color: "var(--danger)" }}>{errors.confirmPassword.message}</p>
               )}
             </div>
             <button type="submit" disabled={loading}

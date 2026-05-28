@@ -1,23 +1,20 @@
 // client/src/components/events/EventSkeleton.jsx
 const EventSkeleton = () => (
-  <div className="bg-white rounded-2xl border border-gray-100
-                  overflow-hidden animate-pulse">
-    {/* Banner */}
-    <div className="w-full h-40 bg-gray-200" />
-    <div className="p-5 space-y-3">
-      {/* Badge */}
-      <div className="w-20 h-5 bg-gray-200 rounded-full" />
-      {/* Title */}
-      <div className="w-3/4 h-4 bg-gray-200 rounded" />
-      <div className="w-1/2 h-4 bg-gray-100 rounded" />
-      {/* Meta */}
-      <div className="space-y-2 pt-1">
-        <div className="w-40 h-3 bg-gray-200 rounded" />
-        <div className="w-32 h-3 bg-gray-100 rounded" />
-        <div className="w-36 h-3 bg-gray-100 rounded" />
+  <div className="card rounded-2xl overflow-hidden" style={{ background: "var(--card)" }}>
+    <div className="skeleton h-40 w-full" style={{ borderRadius: "0" }} />
+    <div className="p-4 space-y-3">
+      <div className="flex gap-2">
+        <div className="skeleton h-5 w-20 rounded-full" />
+        <div className="skeleton h-5 w-16 rounded-full" />
       </div>
-      {/* Button */}
-      <div className="w-full h-9 bg-gray-200 rounded-xl mt-2" />
+      <div className="skeleton h-4 w-3/4 rounded-full" />
+      <div className="skeleton h-3 w-full rounded-full" />
+      <div className="skeleton h-3 w-5/6 rounded-full" />
+      <div className="space-y-2">
+        <div className="skeleton h-3 w-40 rounded-full" />
+        <div className="skeleton h-3 w-36 rounded-full" />
+      </div>
+      <div className="skeleton h-9 w-full rounded-xl" />
     </div>
   </div>
 );

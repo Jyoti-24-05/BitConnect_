@@ -184,7 +184,7 @@ const PostDetailPage = () => {
       </button>
 
       {/* ── Main post card ── */}
-      <article className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <article className="card rounded-2xl" style={{ background: "var(--card)" }}>
 
         {/* Author row */}
         <div className="flex items-start justify-between mb-5">

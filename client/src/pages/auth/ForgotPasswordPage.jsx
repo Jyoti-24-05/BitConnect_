@@ -30,16 +30,15 @@ const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white
-                    flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden" style={{ background: "var(--bg)" }}>
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="card rounded-2xl" style={{ background: "var(--card)" }}>
           {sent ? (
             <div className="text-center space-y-3">
               <div className="w-14 h-14 bg-green-100 rounded-full flex items-center
                               justify-center mx-auto text-2xl">✉️</div>
               <h2 className="text-lg font-semibold text-gray-900">Check your email</h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm" style={{ color: "var(--tx-muted)" }}>
                 If this email exists, a reset link has been sent.
                 Check your inbox and spam folder.
               </p>
@@ -63,7 +62,7 @@ const ForgotPasswordPage = () => {
                                     rounded-xl text-sm outline-none
                                     focus:ring-2 focus:ring-indigo-300 transition" />
                   {errors.email && (
-                    <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--danger)" }}>{errors.email.message}</p>
                   )}
                 </div>
                 <button type="submit" disabled={loading}

@@ -5,13 +5,13 @@ import Sidebar    from "./Sidebar";
 import useNotifications from "@/hooks/useNotifications";
 
 const RootLayout = () => {
-  useNotifications(); // real-time toast + badge updates
+  useNotifications();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ background: "var(--bg)", position: "relative", zIndex: 1 }}>
       <Navbar />
-      <div className="max-w-7xl mx-auto px-4 pt-16 pb-8 flex gap-6">
-        {/* Left sidebar — hidden on mobile */}
+      <div className="max-w-7xl mx-auto px-4 pt-20 pb-8 flex gap-5">
+        {/* Left sidebar */}
         <aside className="hidden lg:block w-64 shrink-0">
           <Sidebar />
         </aside>

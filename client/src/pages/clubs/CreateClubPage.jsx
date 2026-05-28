@@ -29,7 +29,7 @@ const schema = z.object({
 
 const Field = ({ label, error, hint, required, children }) => (
   <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+    <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: "var(--tx-muted)" }}>
       {label}
       {required && <span className="text-red-400 ml-0.5">*</span>}
     </label>
@@ -141,7 +141,7 @@ const CreateClubPage = () => {
         Back
       </button>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="card rounded-2xl p-6" style={{ background: "var(--card)" }}>
         <h1 className="text-xl font-semibold text-gray-900 mb-6">
           Create a club
         </h1>
@@ -205,7 +205,7 @@ const CreateClubPage = () => {
 
             {/* ── Privacy toggle — plain state, no form field ── */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: "var(--tx-muted)" }}>
                 Privacy
               </label>
               <div className="grid grid-cols-2 gap-2">

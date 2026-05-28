@@ -9,16 +9,19 @@ const sizes = {
 
 const Spinner = ({ size = "md", className }) => (
   <div className={cn(
-    "rounded-full border-indigo-600 border-t-transparent animate-spin",
+    "rounded-full animate-spin",
     sizes[size],
     className
-  )} />
+  )}
+  style={{ borderColor: "var(--p200)", borderTopColor: "var(--p500)" }} />
 );
 
-// Full-page centered spinner
 export const PageSpinner = () => (
   <div className="min-h-[60vh] flex items-center justify-center">
-    <Spinner size="lg" />
+    <div className="flex flex-col items-center gap-3">
+      <Spinner size="lg" />
+      <p className="text-sm font-medium" style={{ color: "var(--tx-muted)" }}>Loading...</p>
+    </div>
   </div>
 );
 

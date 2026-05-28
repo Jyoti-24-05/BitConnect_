@@ -54,7 +54,7 @@ const passwordSchema = z
 // ─── Reusable field ───────────────────────────────────────────────────────────
 const Field = ({ label, error, hint, children }) => (
   <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+    <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: "var(--tx-muted)" }}>
       {label}
     </label>
     {children}
@@ -227,7 +227,7 @@ const EditProfilePage = () => {
         Back to profile
       </button>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+      <div className="card rounded-2xl overflow-hidden" style={{ background: "var(--card)" }}>
 
         {/* Section tabs */}
         <div className="flex border-b border-gray-100">
@@ -339,7 +339,7 @@ const EditProfilePage = () => {
 
               {/* Skills — NOT a form, just state */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: "var(--tx-muted)" }}>
                   Skills
                   <span className="text-gray-400 font-normal ml-1">(max 15)</span>
                 </label>

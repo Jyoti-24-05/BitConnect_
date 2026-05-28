@@ -127,12 +127,20 @@ eventSchema.virtual("durationMinutes").get(function () {
 
 // ─── Pre-save validation ──────────────────────────────────────────────────────
 
-eventSchema.pre("save", function (next) {
-  if (this.endDate <= this.startDate)
-    return next(new Error("End date must be after start date"));
-  if (this.rsvpDeadline && this.rsvpDeadline > this.startDate)
-    return next(new Error("RSVP deadline must be before event start"));
-  next();
+// AFTER
+eventSchema.pre("save", async function () {
+  if (this.startDate && this.endDate) {
+    const start = new Date(this.startDate);
+    const end   = new Date(this.endDate);
+    if (end <= start)
+      throw new Error("End date must be after start date");
+  }
+  if (this.rsvpDeadline && this.startDate) {
+    const start    = new Date(this.startDate);
+    const deadline = new Date(this.rsvpDeadline);
+    if (deadline > start)
+      throw new Error("RSVP deadline must be before event start");
+  }
 });
 
 // ─── Static methods ───────────────────────────────────────────────────────────

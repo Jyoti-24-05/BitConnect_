@@ -11,6 +11,13 @@ const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+  const BLOCKED_TYPES = ["image/heic", "image/heif", "image/avif", "image/gif",
+                         "image/bmp", "image/tiff", "image/svg+xml"];
+
+  if (BLOCKED_TYPES.includes(file.mimetype)) {
+    cb(new ApiError(400, `${file.mimetype.split("/")[1].toUpperCase()} format is not supported. Please upload a JPEG, PNG, or WebP image.`), false);
+    return;
+  }
   if (ALLOWED_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
@@ -44,15 +51,22 @@ const compressImage = async (buffer, options = {}) => {
     fit     = "inside", // maintain aspect ratio, never upscale
   } = options;
 
-  return sharp(buffer)
-    .resize(width, height, { fit, withoutEnlargement: true })
-    .webp({ quality }) // convert everything to webp — best compression
-    .toBuffer();
+  try {
+    return await sharp(buffer)
+      .resize(width, height, { fit, withoutEnlargement: true })
+      .webp({ quality }) // convert everything to webp — best compression
+      .toBuffer();
+  } catch (err) {
+    // sharp throws this for HEIC, AVIF, corrupt files, etc.
+    throw new ApiError(400, "Unsupported image format. Please upload a JPEG, PNG, or WebP file.");
+  }
 };
 
 // ─── Process + upload single image ───────────────────────────────────────────
-const processAndUpload = async (file, folder, options = {}) => {
-  const compressed = await compressImage(file.buffer, options);
+// AFTER
+const processAndUpload = async (fileOrBuffer, folder, options = {}) => {
+  const buffer = Buffer.isBuffer(fileOrBuffer) ? fileOrBuffer : fileOrBuffer.buffer;
+  const compressed = await compressImage(buffer, options);
   return uploadToCloudinary(compressed, { folder });
 };
 

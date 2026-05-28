@@ -251,8 +251,7 @@ useEffect(() => {
       </button>
 
       {/* ── Club header card ── */}
-      <div className="bg-white rounded-2xl border border-gray-100
-                      shadow-sm overflow-hidden">
+      <div className="card rounded-2xl overflow-hidden" style={{ background: "var(--card)" }}>
 
         {/* Banner */}
         <div className="h-36 bg-gradient-to-r from-indigo-100 to-purple-100">
@@ -323,7 +322,7 @@ useEffect(() => {
 
           {/* Club name + badges */}
           <div className="flex items-center gap-2 flex-wrap mb-2">
-            <h1 className="text-xl font-semibold text-gray-900">
+            <h1 className="text-xl font-bold" style={{ fontFamily: "Syne, sans-serif", color: "var(--tx-h)" }}>
               {club.name}
             </h1>
             {club.isVerified && (
@@ -419,7 +418,7 @@ useEffect(() => {
                   size="sm"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-semibold" style={{ color: "var(--tx-h)", fontFamily: "Syne, sans-serif" }}>
                     {req.user?.username}
                   </p>
                   {req.message && (
@@ -455,8 +454,7 @@ useEffect(() => {
       )}
 
       {/* ── Tabs ── */}
-      <div className="bg-white rounded-2xl border border-gray-100
-                      shadow-sm overflow-hidden">
+      <div className="card rounded-2xl overflow-hidden" style={{ background: "var(--card)" }}>
         {/* Tab bar */}
         <div className="flex border-b border-gray-100">
           {TABS.map((tab) => (
@@ -659,7 +657,7 @@ useEffect(() => {
         title={`Request to join ${club.name}`}
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm" style={{ color: "var(--tx-muted)" }}>
             This is a private club. Send a message with your request to
             help the admin decide.
           </p>

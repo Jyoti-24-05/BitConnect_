@@ -179,16 +179,14 @@ const ClubsPage = () => {
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Clubs</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-2xl font-bold" style={{ fontFamily: "Syne, sans-serif", color: "var(--tx-h)" }}>Clubs</h1>
+          <p className="text-sm mt-0.5" style={{ color: "var(--tx-muted)" }}>
             Discover and join student organisations
           </p>
         </div>
         <Link
           to="/clubs/create"
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600
-                     text-white text-sm font-medium rounded-xl
-                     hover:bg-indigo-700 transition"
+          className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm"
         >
           <Plus className="w-4 h-4" />
           Create club
@@ -196,8 +194,7 @@ const ClubsPage = () => {
       </div>
 
       {/* ── Search + filters ── */}
-      <div className="bg-white rounded-2xl border border-gray-100
-                      shadow-sm p-4 space-y-3">
+      <div className="card rounded-2xl p-4 space-y-3" style={{ background: "var(--card)" }}>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2
                              w-4 h-4 text-gray-400" />
@@ -224,13 +221,14 @@ const ClubsPage = () => {
             <button
               key={value}
               onClick={() => setCategory(value)}
-              className={cn(
-                "px-3.5 py-1.5 rounded-full text-xs font-medium",
-                "border transition capitalize",
-                category === value
-                  ? "bg-indigo-600 text-white border-indigo-600"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300"
-              )}
+              className="px-3.5 py-1.5 text-xs font-semibold transition-all capitalize"
+              style={{
+                borderRadius: "99px",
+                background: category === value ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "var(--surface2)",
+                color: category === value ? "#fff" : "var(--tx)",
+                border: `1.5px solid ${category === value ? "transparent" : "var(--border)"}`,
+                boxShadow: category === value ? "0 2px 10px rgba(124,58,237,0.25)" : "none",
+              }}
             >
               {label}
             </button>
@@ -241,8 +239,7 @@ const ClubsPage = () => {
       {/* ── My clubs section ── */}
       {myClubs.length > 0 && !search && !category && (
         <div>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase
-                         tracking-wide mb-3">
+          <h2 className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "var(--tx-muted)" }}>
             My clubs
           </h2>
           <div className="space-y-2">
@@ -261,8 +258,7 @@ const ClubsPage = () => {
       {/* ── Discover section ── */}
       <div>
         {(search || category || myClubs.length > 0) && (
-          <h2 className="text-sm font-semibold text-gray-500 uppercase
-                         tracking-wide mb-3">
+          <h2 className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "var(--tx-muted)" }}>
             {search ? `Results for "${search}"` : category ? `${category} clubs` : "Discover"}
           </h2>
         )}

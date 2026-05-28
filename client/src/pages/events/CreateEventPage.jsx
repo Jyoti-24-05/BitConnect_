@@ -38,7 +38,7 @@ const schema = z.object({
 // ─── Reusable field wrapper ───────────────────────────────────────────────────
 const Field = ({ label, error, required, children, hint }) => (
   <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+    <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: "var(--tx-muted)" }}>
       {label}
       {required && <span className="text-red-400 ml-0.5">*</span>}
     </label>
@@ -83,13 +83,38 @@ const CreateEventPage = () => {
   }, [isClub, isAdmin]);
 
   // ── Banner pick ──────────────────────────────────────────────────────────────
-  const handleBannerPick = (e) => {
+  const handleBannerPick = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Size check
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Banner must be under 5MB");
+      toast.error("Banner must be under 5 MB");
+      e.target.value = "";
       return;
     }
+
+    // Read first 12 bytes to verify real file signature (magic bytes)
+    // This catches HEIC, AVIF, GIF, SVG, BMP etc. that sharp can't process
+    const SUPPORTED = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const bytes = new Uint8Array(ev.target.result);
+        const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+        const isJpeg  = hex.startsWith("FFD8FF");
+        const isPng   = hex.startsWith("89504E47");
+        const isWebP  = hex.slice(8, 16) === "57454250"; // RIFF????WEBP
+        resolve(isJpeg || isPng || isWebP);
+      };
+      reader.readAsArrayBuffer(file.slice(0, 12));
+    });
+
+    if (!SUPPORTED) {
+      toast.error("Unsupported format. Please upload a JPEG, PNG, or WebP image.");
+      e.target.value = "";
+      return;
+    }
+
     setBanner(file);
     setPreview(URL.createObjectURL(file));
   };
@@ -172,7 +197,7 @@ const CreateEventPage = () => {
 
           {/* Banner upload */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: "var(--tx-muted)" }}>
               Event banner
             </label>
             {preview ? (
@@ -205,7 +230,7 @@ const CreateEventPage = () => {
                 </span>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
                   className="sr-only"
                   onChange={handleBannerPick}
                 />

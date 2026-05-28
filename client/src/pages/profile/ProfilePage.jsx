@@ -178,8 +178,7 @@ const ProfilePage = () => {
         action={
           <button
             onClick={() => navigate("/feed")}
-            className="px-5 py-2 bg-indigo-600 text-white rounded-xl
-                       text-sm font-medium hover:bg-indigo-700 transition"
+            className="btn-primary px-5 py-2 text-sm"
           >
             Back to feed
           </button>
@@ -195,25 +194,22 @@ const ProfilePage = () => {
       {/* Back */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm text-gray-500
-                   hover:text-indigo-600 transition"
+        className="flex items-center gap-2 text-sm font-medium transition" style={{ color: "var(--tx-muted)" }}
       >
         <ArrowLeft className="w-4 h-4" />
         Back
       </button>
 
       {/* ── Profile card ── */}
-      <div className="bg-white rounded-2xl border border-gray-100
-                      shadow-sm overflow-hidden">
+      <div className="card rounded-2xl overflow-hidden" style={{ background: "var(--card)" }}>
 
         {/* Cover */}
-        <div className="h-28 bg-gradient-to-r from-indigo-100
-                        via-purple-50 to-pink-50" />
+        <div className="h-28" style={{ background: "linear-gradient(135deg, var(--p100), var(--p200), #fce7f3)" }} />
 
         <div className="px-6 pb-6">
           {/* Avatar row */}
           <div className="flex items-end justify-between -mt-10 mb-4">
-            <div className="ring-4 ring-white rounded-full">
+            <div className="rounded-full" style={{ border: "4px solid var(--bg)", borderRadius: "50%", display: "inline-block" }}>
               <Avatar
                 src={profile.profilePicture}
                 name={profile.username}
@@ -225,9 +221,7 @@ const ProfilePage = () => {
               {isOwnProfile ? (
                 <Link
                   to="/profile/edit"
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm
-                             font-medium border border-gray-200 rounded-xl
-                             text-gray-700 hover:bg-gray-50 transition"
+                  className="btn-ghost flex items-center gap-1.5 px-4 py-2 text-sm"
                 >
                   <Edit className="w-4 h-4" />
                   Edit profile
@@ -236,13 +230,7 @@ const ProfilePage = () => {
                 <>
                   <button
                     onClick={handleFollow}
-                    className={cn(
-                      "flex items-center gap-1.5 px-4 py-2 text-sm",
-                      "font-medium rounded-xl transition",
-                      isFollowing
-                        ? "border border-gray-200 text-gray-700 hover:bg-gray-50"
-                        : "bg-indigo-600 text-white hover:bg-indigo-700"
-                    )}
+                    className={isFollowing ? "btn-ghost flex items-center gap-1.5 px-4 py-2 text-sm" : "btn-primary flex items-center gap-1.5 px-4 py-2 text-sm"}
                   >
                     {isFollowing ? (
                       <><UserMinus className="w-4 h-4" /> Unfollow</>
@@ -252,9 +240,7 @@ const ProfilePage = () => {
                   </button>
                   <Link
                     to={`/messages/${profile._id}`}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm
-                               font-medium border border-gray-200 rounded-xl
-                               text-gray-700 hover:bg-gray-50 transition"
+                    className="btn-ghost flex items-center gap-1.5 px-4 py-2 text-sm"
                   >
                     <MessageSquare className="w-4 h-4" />
                     Message
@@ -266,28 +252,21 @@ const ProfilePage = () => {
 
           {/* Name + badges */}
           <div className="mb-1 flex items-center gap-2 flex-wrap">
-            <h1 className="text-xl font-semibold text-gray-900">
+            <h1 className="text-xl font-bold" style={{ color: "var(--tx-h)", fontFamily: "Syne, sans-serif" }}>
               {profile.username}
             </h1>
             {profile.isVerified && (
               <span className="text-indigo-500 text-sm">✓</span>
             )}
-            <span className={cn(
-              "text-xs font-medium px-2.5 py-1 rounded-full capitalize",
-              profile.role === "admin"
-                ? "bg-red-50 text-red-700"
-                : profile.role === "club"
-                  ? "bg-purple-50 text-purple-700"
-                  : "bg-gray-100 text-gray-600"
-            )}>
+            <span className={`badge ${profile.role === "admin" ? "badge-red" : profile.role === "club" ? "badge-purple" : "badge"} capitalize`}>
               {profile.role}
             </span>
           </div>
 
           {/* College + year */}
           {(profile.college || profile.graduationYear) && (
-            <p className="text-sm text-gray-500 flex items-center gap-1.5 mb-2">
-              <GraduationCap className="w-4 h-4 text-indigo-400" />
+            <p className="text-sm flex items-center gap-1.5 mb-2" style={{ color: "var(--tx-muted)" }}>
+              <GraduationCap className="w-4 h-4" style={{ color: "var(--p400)" }} />
               {profile.college}
               {profile.graduationYear && ` · Batch of ${profile.graduationYear}`}
             </p>
@@ -295,7 +274,7 @@ const ProfilePage = () => {
 
           {/* Bio */}
           {profile.bio && (
-            <p className="text-sm text-gray-700 leading-relaxed mb-3">
+            <p className="text-sm leading-relaxed mb-3" style={{ color: "var(--tx)" }}>
               {profile.bio}
             </p>
           )}
@@ -306,8 +285,7 @@ const ProfilePage = () => {
               {profile.skills.map((skill) => (
                 <span
                   key={skill}
-                  className="text-xs font-medium text-indigo-700
-                             bg-indigo-50 px-2.5 py-1 rounded-full"
+                  className="tag-chip"
                 >
                   {skill}
                 </span>
@@ -325,7 +303,7 @@ const ProfilePage = () => {
                   href={profile.socialLinks.github}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-gray-900 transition"
+                  className="transition" style={{ color: "var(--tx-muted)" }}
                   aria-label="GitHub"
                 >
                   <FaGithub className="w-4 h-4" />
@@ -336,7 +314,7 @@ const ProfilePage = () => {
                   href={profile.socialLinks.linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-blue-600 transition"
+                  className="transition" style={{ color: "var(--tx-muted)" }}
                   aria-label="LinkedIn"
                 >
                   <FaLinkedin className="w-4 h-4" />
@@ -347,7 +325,7 @@ const ProfilePage = () => {
                   href={profile.socialLinks.twitter}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-sky-500 transition"
+                  className="transition" style={{ color: "var(--tx-muted)" }}
                   aria-label="Twitter"
                 >
                   <FaTwitter className="w-4 h-4" />
@@ -359,7 +337,7 @@ const ProfilePage = () => {
           {/* Stats row */}
           <div className="flex border-t border-gray-100 pt-4 -mx-6 px-6">
             <div className="flex-1 text-center">
-              <p className="font-semibold text-gray-900">{posts.length}</p>
+              <p className="font-bold" style={{ color: "var(--tx-h)", fontFamily: "Syne, sans-serif" }}>{posts.length}</p>
               <p className="text-xs text-gray-400 mt-0.5">Posts</p>
             </div>
             <button
@@ -367,7 +345,7 @@ const ProfilePage = () => {
               className="flex-1 text-center hover:bg-gray-50 rounded-xl
                          transition py-1"
             >
-              <p className="font-semibold text-gray-900">
+              <p className="font-bold" style={{ color: "var(--tx-h)", fontFamily: "Syne, sans-serif" }}>
                 {followCount.followers}
               </p>
               <p className="text-xs text-gray-400 mt-0.5">Followers</p>
@@ -377,13 +355,13 @@ const ProfilePage = () => {
               className="flex-1 text-center hover:bg-gray-50 rounded-xl
                          transition py-1"
             >
-              <p className="font-semibold text-gray-900">
+              <p className="font-bold" style={{ color: "var(--tx-h)", fontFamily: "Syne, sans-serif" }}>
                 {followCount.following}
               </p>
               <p className="text-xs text-gray-400 mt-0.5">Following</p>
             </button>
             <div className="flex-1 text-center">
-              <p className="font-semibold text-gray-900">
+              <p className="font-bold" style={{ color: "var(--tx-h)", fontFamily: "Syne, sans-serif" }}>
                 {profile.posts?.length ?? 0}
               </p>
               <p className="text-xs text-gray-400 mt-0.5">Events</p>
@@ -393,11 +371,10 @@ const ProfilePage = () => {
       </div>
 
       {/* ── Tabs card ── */}
-      <div className="bg-white rounded-2xl border border-gray-100
-                      shadow-sm overflow-hidden">
+      <div className="card rounded-2xl overflow-hidden" style={{ background: "var(--card)" }}>
 
         {/* Tab bar */}
-        <div className="flex border-b border-gray-100">
+        <div className="flex" style={{ borderBottom: "1.5px solid var(--border)" }}>
           {TABS.filter((t) =>
             t.key !== "bookmarks" || isOwnProfile
           ).map(({ key, label, icon: Icon }) => (
@@ -452,7 +429,7 @@ const ProfilePage = () => {
                 ))}
                 <div ref={sentinelRef} className="h-4" />
                 {!hasMore && posts.length > 0 && (
-                  <p className="text-center text-sm text-gray-400 py-4">
+                  <p className="text-center text-sm py-4" style={{ color: "var(--tx-light)" }}>
                     All posts loaded
                   </p>
                 )}
@@ -487,9 +464,9 @@ const ProfilePage = () => {
             {/* Info rows */}
             <div className="space-y-3">
               {profile.college && (
-                <div className="flex items-center gap-3 text-sm">
-                  <GraduationCap className="w-4 h-4 text-indigo-400 shrink-0" />
-                  <span className="text-gray-700">
+                <div className="flex items-center gap-3 text-sm" style={{ color: "var(--tx)" }}>
+                  <GraduationCap className="w-4 h-4 shrink-0" style={{ color: "var(--p400)" }} />
+                  <span className="" style={{ color: "var(--tx)" }}>
                     {profile.college}
                     {profile.graduationYear &&
                       ` · Graduating ${profile.graduationYear}`}
@@ -497,16 +474,16 @@ const ProfilePage = () => {
                 </div>
               )}
               {profile.gender && (
-                <div className="flex items-center gap-3 text-sm">
-                  <User className="w-4 h-4 text-indigo-400 shrink-0" />
-                  <span className="text-gray-700 capitalize">
+                <div className="flex items-center gap-3 text-sm" style={{ color: "var(--tx)" }}>
+                  <User className="w-4 h-4 shrink-0" style={{ color: "var(--p400)" }} />
+                  <span className="capitalize" style={{ color: "var(--tx)" }}>
                     {profile.gender}
                   </span>
                 </div>
               )}
-              <div className="flex items-center gap-3 text-sm">
-                <Calendar className="w-4 h-4 text-indigo-400 shrink-0" />
-                <span className="text-gray-700">
+              <div className="flex items-center gap-3 text-sm" style={{ color: "var(--tx)" }}>
+                <Calendar className="w-4 h-4 shrink-0" style={{ color: "var(--p400)" }} />
+                <span className="" style={{ color: "var(--tx)" }}>
                   Joined {formatDate(profile.createdAt)}
                 </span>
               </div>
@@ -515,16 +492,14 @@ const ProfilePage = () => {
             {/* Skills section */}
             {profile.skills?.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase
-                               tracking-wide mb-2">
+                <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "var(--tx-muted)" }}>
                   Skills
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {profile.skills.map((skill) => (
                     <span
                       key={skill}
-                      className="text-xs font-medium text-indigo-700
-                                 bg-indigo-50 px-3 py-1.5 rounded-full"
+                      className="tag-chip"
                     >
                       {skill}
                     </span>
@@ -538,8 +513,7 @@ const ProfilePage = () => {
               profile.socialLinks?.linkedin ||
               profile.socialLinks?.twitter) && (
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase
-                               tracking-wide mb-3">
+                <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "var(--tx-muted)" }}>
                   Links
                 </p>
                 <div className="space-y-2">
@@ -548,8 +522,7 @@ const ProfilePage = () => {
                       href={profile.socialLinks.github}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2.5 text-sm
-                                 text-gray-700 hover:text-indigo-600 transition"
+                      className="flex items-center gap-2.5 text-sm transition" style={{ color: "var(--tx)" }}
                     >
                       <Github className="w-4 h-4 text-gray-400" />
                       {profile.socialLinks.github.replace("https://", "")}
@@ -560,8 +533,7 @@ const ProfilePage = () => {
                       href={profile.socialLinks.linkedin}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2.5 text-sm
-                                 text-gray-700 hover:text-indigo-600 transition"
+                      className="flex items-center gap-2.5 text-sm transition" style={{ color: "var(--tx)" }}
                     >
                       <Linkedin className="w-4 h-4 text-gray-400" />
                       {profile.socialLinks.linkedin.replace("https://", "")}
@@ -572,8 +544,7 @@ const ProfilePage = () => {
                       href={profile.socialLinks.twitter}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2.5 text-sm
-                                 text-gray-700 hover:text-indigo-600 transition"
+                      className="flex items-center gap-2.5 text-sm transition" style={{ color: "var(--tx)" }}
                     >
                       <Twitter className="w-4 h-4 text-gray-400" />
                       {profile.socialLinks.twitter.replace("https://", "")}
@@ -584,7 +555,7 @@ const ProfilePage = () => {
             )}
 
             {/* Last seen */}
-            <p className="text-xs text-gray-400">
+            <p className="text-xs" style={{ color: "var(--tx-light)" }}>
               Last active {timeAgo(profile.lastSeen ?? profile.updatedAt)}
             </p>
           </div>
@@ -600,11 +571,10 @@ const ProfilePage = () => {
       >
         {followLoad ? (
           <div className="flex justify-center py-8">
-            <div className="w-8 h-8 border-2 border-indigo-600
-                            border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: "var(--p200)", borderTopColor: "var(--p500)" }} />
           </div>
         ) : followList.length === 0 ? (
-          <p className="text-center text-sm text-gray-400 py-8">
+          <p className="text-center text-sm py-8" style={{ color: "var(--tx-muted)" }}>
             {followModal === "followers" ? "No followers yet" : "Not following anyone"}
           </p>
         ) : (
@@ -614,8 +584,7 @@ const ProfilePage = () => {
                 key={u._id}
                 to={`/profile/${u.username}`}
                 onClick={() => setFollowModal(null)}
-                className="flex items-center gap-3 p-2 hover:bg-gray-50
-                           rounded-xl transition"
+                className="flex items-center gap-3 p-2 rounded-xl transition" onMouseEnter={e => e.currentTarget.style.background="var(--p50)"} onMouseLeave={e => e.currentTarget.style.background="transparent"}
               >
                 <Avatar
                   src={u.profilePicture}
@@ -623,14 +592,14 @@ const ProfilePage = () => {
                   size="sm"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-semibold" style={{ color: "var(--tx-h)", fontFamily: "Syne, sans-serif" }}>
                     {u.username}
                     {u.isVerified && (
                       <span className="ml-1 text-indigo-500 text-xs">✓</span>
                     )}
                   </p>
                   {u.bio && (
-                    <p className="text-xs text-gray-400 truncate">{u.bio}</p>
+                    <p className="text-xs truncate" style={{ color: "var(--tx-muted)" }}>{u.bio}</p>
                   )}
                 </div>
               </Link>

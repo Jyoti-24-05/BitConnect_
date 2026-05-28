@@ -20,7 +20,7 @@ import toast                               from "react-hot-toast";
 const StatCard = ({ label, value, sub, icon: Icon, color }) => (
   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
     <div className="flex items-center justify-between mb-3">
-      <p className="text-sm text-gray-500">{label}</p>
+      <p className="text-sm" style={{ color: "var(--tx-muted)" }}>{label}</p>
       <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", color)}>
         <Icon className="w-5 h-5" />
       </div>
@@ -33,7 +33,7 @@ const StatCard = ({ label, value, sub, icon: Icon, color }) => (
 // ─── Section header ───────────────────────────────────────────────────────────
 const SectionHeader = ({ title, count, action }) => (
   <div className="flex items-center justify-between mb-4">
-    <h2 className="font-semibold text-gray-900">
+    <h2 className="font-bold" style={{ color: "var(--tx-h)", fontFamily: "Syne, sans-serif" }}>
       {title}
       {count !== undefined && (
         <span className="ml-2 text-sm text-gray-400 font-normal">({count})</span>
@@ -189,8 +189,8 @@ const AdminDashboard = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Admin dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-xl font-bold" style={{ fontFamily: "Syne, sans-serif", color: "var(--tx-h)" }}>Admin dashboard</h1>
+          <p className="text-sm mt-0.5" style={{ color: "var(--tx-muted)" }}>
             Logged in as <span className="font-medium text-indigo-600">{user?.username}</span>
           </p>
         </div>
@@ -400,7 +400,7 @@ const AdminDashboard = () => {
 
       {/* ── Users tab ── */}
       {tab === "users" && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div className="card rounded-2xl overflow-hidden" style={{ background: "var(--card)" }}>
 
           {/* Filters */}
           <div className="p-4 border-b border-gray-100 flex gap-3 flex-wrap">
@@ -645,7 +645,7 @@ const AdminDashboard = () => {
                       size="sm"
                     />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-semibold" style={{ color: "var(--tx-h)", fontFamily: "Syne, sans-serif" }}>
                         {post.author?.username}
                       </p>
                       <p className="text-xs text-gray-400">

@@ -42,25 +42,25 @@ const Comment = ({
 
       <div className="flex-1 min-w-0">
         {/* Bubble */}
-        <div className="bg-gray-50 rounded-2xl rounded-tl-none px-4 py-3">
+        <div className="px-4 py-3">
           <div className="flex items-baseline gap-2 flex-wrap mb-1">
             <Link
               to={`/profile/${comment.author?.username}`}
-              className="font-semibold text-sm text-gray-900 hover:underline"
+              className="font-semibold text-sm hover:underline" style={{ color: "var(--tx-h)", fontFamily: "Syne, sans-serif" }}
             >
               {comment.author?.username}
             </Link>
             {comment.author?.isVerified && (
               <span className="text-indigo-500 text-xs">✓</span>
             )}
-            <span className="text-xs text-gray-400">
+            <span className="text-xs" style={{ color: "var(--tx-muted)" }}>
               {timeAgo(comment.createdAt)}
             </span>
             {comment.isEdited && (
-              <span className="text-xs text-gray-400">(edited)</span>
+              <span className="text-xs" style={{ color: "var(--tx-muted)" }}>(edited)</span>
             )}
           </div>
-          <p className="text-sm text-gray-700 leading-relaxed break-words">
+          <p className="text-sm leading-relaxed break-words" style={{ color: "var(--tx)" }}>
             {comment.content}
           </p>
         </div>
