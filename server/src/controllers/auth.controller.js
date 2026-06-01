@@ -9,19 +9,20 @@ import { deleteFromCloudinary } from "../config/cloudinary.js";
 import sendEmail                from "../utils/sendEmail.js";
 
 // ─── Cookie config ────────────────────────────────────────────────────────────
+const isProd = process.env.NODE_ENV === "production";
+
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure:   process.env.NODE_ENV === "production",
-  sameSite: "strict",
-  maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days
+  secure:   isProd,
+  sameSite: isProd ? "none" : "strict",
+  maxAge:   7 * 24 * 60 * 60 * 1000,
 };
 
 const CLEAR_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure:   process.env.NODE_ENV === "production",
-  sameSite: "strict",
+  secure:   isProd,
+  sameSite: isProd ? "none" : "strict",
 };
-
 // ─── Internal helper ──────────────────────────────────────────────────────────
 const generateTokenPair = (user) => ({
   accessToken:  user.generateAccessToken(),
