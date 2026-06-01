@@ -1,3 +1,4 @@
+
 // server/src/routes/user.routes.js  ← create this new file
 import { Router }        from "express";
 import User              from "../models/User.model.js";

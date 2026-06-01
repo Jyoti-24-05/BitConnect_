@@ -30,10 +30,11 @@ app.use(helmet({
 app.use(cors({
   origin(origin, callback) {
     const whitelist = [
-      process.env.CLIENT_URL,
-      "http://localhost:5173",
-      "http://localhost:3000",
-    ];
+  process.env.CLIENT_URL,
+  process.env.CLIENT_URL_2,
+  "http://localhost:5173",
+  "http://localhost:3000",
+].filter(Boolean);
     if (!origin || whitelist.includes(origin)) return callback(null, true);
     return callback(new Error(`CORS: origin ${origin} not allowed`));
   },
