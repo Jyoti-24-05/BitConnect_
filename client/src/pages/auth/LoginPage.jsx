@@ -149,8 +149,8 @@ const LoginPage = () => {
 
             <div className="grid grid-cols-2 gap-3">
               {[
-                { href: `${SERVER_URL}/api/v1/auth/google`, label: "🌐 Google" },
-                { href: `${SERVER_URL}/api/v1/auth/github`, label: "🐱 GitHub" },
+                { href: `${SERVER_URL}/api/v1/auth/google`, label: " Google" },
+                { href: `${SERVER_URL}/api/v1/auth/github`, label: " GitHub" },
               ].map(({ href, label }) => (
                 <a key={label} href={href}
                    className="flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all btn-ghost">

@@ -1,5 +1,5 @@
 // client/src/components/clubs/ClubCard.jsx
-import { Link }       from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Users, Lock } from "lucide-react";
 import { ClubLogo }   from "@/pages/clubs/ClubsPage";
 import cn             from "@/utils/cn";
@@ -14,13 +14,15 @@ const CATEGORY_STYLES = {
 };
 
 const ClubCard = ({ club, status, onJoin, onLeave }) => {
+  const navigate  = useNavigate();
   const isJoined  = status === "joined";
   const isPending = status === "pending";
   const clubPath  = `/clubs/${club.slug ?? club._id}`;
   const catStyle  = CATEGORY_STYLES[club.category] ?? CATEGORY_STYLES.other;
 
   return (
-    <article className="card card-lift rounded-2xl overflow-hidden" style={{ background: "var(--card)" }}>
+    <article className="card card-lift rounded-2xl overflow-hidden" style={{ background: "var(--card)", cursor: isJoined ? "pointer" : "default" }}
+             onClick={isJoined ? () => navigate(clubPath) : undefined}>
       {/* Banner */}
       <div className="h-20 relative overflow-hidden"
            style={{ background: "linear-gradient(135deg, var(--p100), var(--p200))" }}>
@@ -81,12 +83,11 @@ const ClubCard = ({ club, status, onJoin, onLeave }) => {
         {/* Action buttons */}
         {isJoined ? (
           <div className="flex gap-2">
-            <Link to={clubPath}
-                  className="flex-1 text-center py-2 text-xs font-semibold transition-colors btn-ghost"
-                  style={{ textDecoration: "none" }}>
-              View club
-            </Link>
-            <button onClick={() => onLeave(club)}
+            <button onClick={() => navigate(clubPath)}
+                    className="btn-primary flex-1 py-2 text-xs flex items-center justify-center gap-1.5">
+              Open club →
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); onLeave(club); }}
                     className="px-3 py-2 text-xs transition-all"
                     style={{
                       borderRadius: "var(--r)",
@@ -103,7 +104,7 @@ const ClubCard = ({ club, status, onJoin, onLeave }) => {
           <button disabled
                   className="w-full py-2 text-xs font-semibold cursor-not-allowed"
                   style={{ background: "#fef3c7", color: "#92400e", borderRadius: "var(--r)", border: "1.5px solid #fde68a" }}>
-             Request pending
+            ⏳ Request pending
           </button>
         ) : (
           <button onClick={() => onJoin(club)}

@@ -149,7 +149,6 @@ eventSchema.pre("save", async function () {
 eventSchema.statics.getUpcoming = function ({ category, tags, limit = 10, cursor } = {}) {
   const filter = {
     status:    "published",
-    isApproved: true,
     startDate: { $gt: cursor ?? new Date() },
     ...(category && { category }),
     ...(tags?.length && { tags: { $in: tags } }),

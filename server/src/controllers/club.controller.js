@@ -82,6 +82,33 @@ export const joinClub = catchAsync(async (req, res) => {
   res.status(200).json(new ApiResponse(200, result, result.message));
 });
 
+
+// ─── GET /api/v1/clubs/me — clubs the logged-in user has joined ───────────────
+export const getMyClubs = catchAsync(async (req, res) => {
+  const clubs = await Club.find({
+    "members.user": req.user._id,
+    "members.status": "active",
+    isActive: true,
+  })
+    .populate("admin", "username profilePicture")
+    .select("name slug logo banner category description memberCount isVerified isPrivate admin members stats")
+    .lean();
+
+  // Attach the user's role in each club
+  const withRole = clubs.map((club) => {
+    const myMember = club.members?.find(
+      (m) => m.user?.toString() === req.user._id.toString()
+    );
+    return {
+      ...club,
+      memberCount: club.members?.filter(m => m.status === "active").length ?? 0,
+      myRole: myMember?.role ?? "member",
+    };
+  });
+
+  res.status(200).json(new ApiResponse(200, withRole, "My clubs fetched"));
+});
+
 // ─── POST /api/v1/clubs/:clubId/leave ────────────────────────────────────────
 export const leaveClub = catchAsync(async (req, res) => {
   const result = await ClubService.leaveClub(

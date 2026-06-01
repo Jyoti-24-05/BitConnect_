@@ -1,23 +1,21 @@
 // client/src/pages/clubs/ClubsPage.jsx
-import { useState, useEffect,
-         useCallback }              from "react";
-import { Link }                     from "react-router-dom";
-import { Search, Users,
-         Plus, X, Shield }          from "lucide-react";
-import { clubApi }                  from "@/api/clubApi";
-import useAuth                      from "@/hooks/useAuth";
-import useDebounce                  from "@/hooks/useDebounce";
-import useInfiniteScroll            from "@/hooks/useInfiniteScroll";
-import ClubCard                     from "@/components/clubs/ClubCard";
-import ClubSkeleton                 from "@/components/clubs/ClubSkeleton";
-import EmptyState                   from "@/components/common/EmptyState";
-import { CLUB_CATEGORIES }          from "@/utils/constants";
-import cn                           from "@/utils/cn";
-import toast                        from "react-hot-toast";
+import { useState, useEffect, useCallback } from "react";
+import { Link, useNavigate }               from "react-router-dom";
+import { Search, Users, Plus, X, ChevronRight, MessageSquare } from "lucide-react";
+import { clubApi }          from "@/api/clubApi";
+import useAuth              from "@/hooks/useAuth";
+import useDebounce          from "@/hooks/useDebounce";
+import useInfiniteScroll    from "@/hooks/useInfiniteScroll";
+import ClubCard             from "@/components/clubs/ClubCard";
+import ClubSkeleton         from "@/components/clubs/ClubSkeleton";
+import EmptyState           from "@/components/common/EmptyState";
+import { CLUB_CATEGORIES }  from "@/utils/constants";
+import cn                   from "@/utils/cn";
+import toast                from "react-hot-toast";
 
 const ClubsPage = () => {
   const { user, isAdmin }     = useAuth();
-
+  const navigate              = useNavigate();
   const [clubs,      setClubs]      = useState([]);
   const [myClubs,    setMyClubs]    = useState([]);
   const [cursor,     setCursor]     = useState(null);
@@ -26,31 +24,21 @@ const ClubsPage = () => {
   const [myLoading,  setMyLoading]  = useState(false);
   const [search,     setSearch]     = useState("");
   const [category,   setCategory]   = useState("");
-  // Track join status per club: "joined" | "pending" | null
   const [joinStatus, setJoinStatus] = useState({});
-
   const debouncedSearch = useDebounce(search, 400);
 
-  // ── Load clubs the current user is a member of ─────────────────────────────
+  // ── Load my clubs — uses dedicated /clubs/me endpoint ──────────────────────
   useEffect(() => {
-    const fetchMyClubs = async () => {
+    if (!user) return;
+    const fetch = async () => {
       setMyLoading(true);
       try {
-        const { data } = await clubApi.discoverClubs({ limit: 50 });
-        const all      = data.data.clubs ?? [];
-        // Filter to clubs where user is active member
-        const mine     = all.filter((c) =>
-          c.members?.some(
-            (m) =>
-              (m.user?._id ?? m.user) === user?._id &&
-              m.status === "active"
-          )
-        );
-        setMyClubs(mine);
+        const { data } = await clubApi.getMyClubs();
+        setMyClubs(Array.isArray(data.data) ? data.data : []);
       } catch { /* non-critical */ }
-      finally   { setMyLoading(false); }
+      finally  { setMyLoading(false); }
     };
-    if (user) fetchMyClubs();
+    fetch();
   }, [user]);
 
   // ── Load discover clubs ─────────────────────────────────────────────────────
@@ -59,114 +47,100 @@ const ClubsPage = () => {
     setLoading(true);
     try {
       let result;
-
       if (debouncedSearch.trim()) {
-        const { data } = await clubApi.searchClubs({
-          q:     debouncedSearch,
-          limit: 12,
-          skip:  cursorVal ? clubs.length : 0,
-        });
-        result = {
-          clubs:      data.data,
-          nextCursor: data.data.length === 12 ? "more" : null,
-          hasMore:    data.data.length === 12,
-        };
+        const { data } = await clubApi.searchClubs({ q: debouncedSearch, limit: 12, skip: cursorVal ? clubs.length : 0 });
+        result = { clubs: data.data, nextCursor: data.data.length === 12 ? "more" : null, hasMore: data.data.length === 12 };
       } else {
-        const { data } = await clubApi.discoverClubs({
-          cursor:   cursorVal,
-          limit:    12,
-          category: category || undefined,
-        });
+        const { data } = await clubApi.discoverClubs({ cursor: cursorVal, limit: 12, category: category || undefined });
         result = data.data;
       }
-
       if (cursorVal) {
         setClubs((prev) => {
           const ids  = new Set(prev.map((c) => c._id));
-          const news = result.clubs.filter((c) => !ids.has(c._id));
-          return [...prev, ...news];
+          return [...prev, ...result.clubs.filter((c) => !ids.has(c._id))];
         });
       } else {
         setClubs(result.clubs ?? []);
       }
-
       setCursor(result.nextCursor);
       setHasMore(result.hasMore ?? false);
-    } catch {
-      toast.error("Failed to load clubs");
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error("Failed to load clubs"); }
+    finally  { setLoading(false); }
   }, [debouncedSearch, category, clubs.length, loading]);
 
-  useEffect(() => {
-    setClubs([]);
-    setCursor(null);
-    setHasMore(true);
-    loadClubs(null);
-  }, [debouncedSearch, category]);
+  useEffect(() => { setClubs([]); setCursor(null); setHasMore(true); loadClubs(null); }, [debouncedSearch, category]);
 
-  const loadMore    = useCallback(() => {
-    if (cursor && cursor !== "more") loadClubs(cursor);
-  }, [cursor, loadClubs]);
+  const loadMore    = useCallback(() => { if (cursor && cursor !== "more") loadClubs(cursor); }, [cursor, loadClubs]);
   const sentinelRef = useInfiniteScroll(loadMore, hasMore, loading);
-
-  // ── Handle join / leave ─────────────────────────────────────────────────────
 
   const sid = (id) => id?.toString() ?? id;
 
+  // ── Join ─────────────────────────────────────────────────────────────────────
   const handleJoin = useCallback(async (club) => {
-  const id   = sid(club._id);
-  const prev = joinStatus[id];
+    const id   = sid(club._id);
+    const prev = joinStatus[id];
 
-  // Optimistic update
-  setJoinStatus((p) => ({
-    ...p,
-    [id]: club.isPrivate ? "pending" : "joined",
-  }));
-
-  try {
-    const { data } = await clubApi.joinClub(id);
-    const status   = data.data?.status ?? (club.isPrivate ? "pending" : "joined");
-
-    setJoinStatus((p) => ({ ...p, [id]: status }));
-
-    if (status === "joined") {
-      toast.success(`Welcome to ${club.name}!`);
-      setMyClubs((p) => [
-        ...p,
-        { ...club, _id: id, memberCount: (club.memberCount ?? 0) + 1 },
-      ]);
-    } else {
-      toast.success("Join request sent to the admin!");
+    // Already known as member — go straight to club page
+    if (prev === "joined" || myClubs.some((c) => sid(c._id) === id)) {
+      navigate(`/clubs/${club.slug ?? club._id}`);
+      return;
     }
-  } catch (err) {
-    // Roll back
-    setJoinStatus((p) => ({ ...p, [id]: prev }));
-    toast.error(err.response?.data?.message ?? "Failed to join");
-  }
-}, [joinStatus]);
+
+    // Optimistic update
+    setJoinStatus((p) => ({ ...p, [id]: club.isPrivate ? "pending" : "joined" }));
+    try {
+      const { data } = await clubApi.joinClub(id);
+      const status   = data.data?.status ?? (club.isPrivate ? "pending" : "joined");
+      setJoinStatus((p) => ({ ...p, [id]: status }));
+      if (status === "joined") {
+        toast.success(`Welcome to ${club.name}! 🎉`);
+        setMyClubs((p) => [...p, { ...club, _id: id }]);
+        navigate(`/clubs/${club.slug ?? club._id}`);
+      } else {
+        toast.success("Join request sent! ⏳");
+      }
+    } catch (err) {
+      const status = err.response?.status;
+      const msg    = err.response?.data?.message ?? "";
+
+      // Any 409 = already involved with this club → navigate there silently
+      if (status === 409) {
+        if (msg.toLowerCase().includes("pending")) {
+          setJoinStatus((p) => ({ ...p, [id]: "pending" }));
+          toast("Your join request is still pending ⏳");
+          return;
+        }
+        // "already a member" or any other 409 → treat as joined, go to club page
+        setJoinStatus((p) => ({ ...p, [id]: "joined" }));
+        if (!myClubs.some((c) => sid(c._id) === id)) {
+          setMyClubs((p) => [...p, { ...club, _id: id }]);
+        }
+        navigate(`/clubs/${club.slug ?? club._id}`);
+        return;
+      }
+
+      // Real error
+      setJoinStatus((p) => ({ ...p, [id]: prev ?? null }));
+      toast.error(msg || "Failed to join");
+    }
+  }, [joinStatus, myClubs, navigate]);
 
   const handleLeave = useCallback(async (club) => {
-  const id = sid(club._id);
-  if (!window.confirm(`Leave ${club.name}?`)) return;
-  try {
-    await clubApi.leaveClub(id);
-    setJoinStatus((p) => ({ ...p, [id]: null }));
-    setMyClubs((p) => p.filter((c) => sid(c._id) !== id));
-    toast.success(`Left ${club.name}`);
-  } catch (err) {
-    toast.error(err.response?.data?.message ?? "Failed to leave");
-  }
-}, []);
+    const id = sid(club._id);
+    if (!window.confirm(`Leave ${club.name}?`)) return;
+    try {
+      await clubApi.leaveClub(id);
+      setJoinStatus((p) => ({ ...p, [id]: null }));
+      setMyClubs((p) => p.filter((c) => sid(c._id) !== id));
+      toast.success(`Left ${club.name}`);
+    } catch (err) { toast.error(err.response?.data?.message ?? "Failed to leave"); }
+  }, []);
 
-  // Compute status for a club
   const getStatus = (club) => {
-  const id = sid(club._id);
-  if (joinStatus[id] !== undefined) return joinStatus[id];
-  const isMember = myClubs.some((c) => sid(c._id) === id);
-  return isMember ? "joined" : null;
-};
+    const id = sid(club._id);
+    if (joinStatus[id] !== undefined) return joinStatus[id];
+    return myClubs.some((c) => sid(c._id) === id) ? "joined" : null;
+  };
 
   const CATEGORY_OPTIONS = [
     { value: "", label: "All" },
@@ -175,87 +149,63 @@ const ClubsPage = () => {
 
   return (
     <div className="space-y-5">
-
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold" style={{ fontFamily: "Syne, sans-serif", color: "var(--tx-h)" }}>Clubs</h1>
-          <p className="text-sm mt-0.5" style={{ color: "var(--tx-muted)" }}>
-            Discover and join student organisations
-          </p>
+          <p className="text-sm mt-0.5" style={{ color: "var(--tx-muted)" }}>Discover and join student organisations</p>
         </div>
-        <Link
-          to="/clubs/create"
-          className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Create club
+        <Link to="/clubs/create" className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm">
+          <Plus className="w-4 h-4" /> Create club
         </Link>
       </div>
 
-      {/* ── Search + filters ── */}
+      {/* Search + filters */}
       <div className="card rounded-2xl p-4 space-y-3" style={{ background: "var(--card)" }}>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2
-                             w-4 h-4 text-gray-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search clubs..."
-            className="w-full pl-9 pr-10 py-2.5 bg-gray-50 border border-gray-200
-                       rounded-xl text-sm outline-none focus:ring-2
-                       focus:ring-indigo-200 focus:border-indigo-300 transition"
-          />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--p400)" }} />
+          <input value={search} onChange={(e) => setSearch(e.target.value)}
+                 placeholder="Search clubs..."
+                 className="input-base w-full pl-10 pr-10 py-2.5 text-sm"
+                 style={{ borderRadius: "99px" }} />
           {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2"
-            >
-              <X className="w-3.5 h-3.5 text-gray-400" />
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "var(--tx-muted)" }}>
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
-
         <div className="flex gap-2 flex-wrap">
           {CATEGORY_OPTIONS.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setCategory(value)}
-              className="px-3.5 py-1.5 text-xs font-semibold transition-all capitalize"
-              style={{
-                borderRadius: "99px",
-                background: category === value ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "var(--surface2)",
-                color: category === value ? "#fff" : "var(--tx)",
-                border: `1.5px solid ${category === value ? "transparent" : "var(--border)"}`,
-                boxShadow: category === value ? "0 2px 10px rgba(124,58,237,0.25)" : "none",
-              }}
-            >
+            <button key={value} onClick={() => setCategory(value)}
+                    className="px-3.5 py-1.5 text-xs font-semibold transition-all capitalize"
+                    style={{
+                      borderRadius: "99px",
+                      background: category === value ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "var(--surface2)",
+                      color: category === value ? "#fff" : "var(--tx)",
+                      border: `1.5px solid ${category === value ? "transparent" : "var(--border)"}`,
+                      boxShadow: category === value ? "0 2px 10px rgba(124,58,237,0.25)" : "none",
+                    }}>
               {label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* ── My clubs section ── */}
+      {/* My clubs */}
       {myClubs.length > 0 && !search && !category && (
         <div>
           <h2 className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "var(--tx-muted)" }}>
-            My clubs
+            My clubs ({myClubs.length})
           </h2>
           <div className="space-y-2">
             {myClubs.map((club) => (
-              <MyClubRow
-                key={club._id}
-                club={club}
-                userId={user?._id}
-                onLeave={handleLeave}
-              />
+              <MyClubRow key={club._id} club={club} userId={user?._id} onLeave={handleLeave} />
             ))}
           </div>
         </div>
       )}
 
-      {/* ── Discover section ── */}
+      {/* Discover */}
       <div>
         {(search || category || myClubs.length > 0) && (
           <h2 className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "var(--tx-muted)" }}>
@@ -264,144 +214,106 @@ const ClubsPage = () => {
         )}
 
         {clubs.length === 0 && !loading ? (
-          <EmptyState
-            icon={Users}
-            title="No clubs found"
-            description={
-              search || category
-                ? "Try a different search or category"
-                : "No clubs yet — be the first to create one!"
-            }
-            action={
-              !search && (
-                <Link
-                  to="/clubs/create"
-                  className="px-5 py-2 bg-indigo-600 text-white rounded-xl
-                             text-sm font-medium hover:bg-indigo-700 transition"
-                >
-                  Create a club
-                </Link>
-              )
-            }
-          />
+          <EmptyState icon={Users} title="No clubs found"
+            description={search || category ? "Try a different search or category" : "No clubs yet — be the first to create one!"}
+            action={!search && (
+              <Link to="/clubs/create" className="btn-primary px-5 py-2 text-sm">Create a club</Link>
+            )} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {clubs
-  .filter((c) => !myClubs.some((m) => sid(m._id) === sid(c._id)))
-  .map((club) => (
-    <ClubCard
-      key={sid(club._id)}
-      club={{ ...club, _id: sid(club._id) }}  
-      status={getStatus(club)}
-      onJoin={handleJoin}
-      onLeave={handleLeave}
-    />
-  ))}
-
-            {loading && Array.from({ length: 4 }).map((_, i) => (
-              <ClubSkeleton key={i} />
-            ))}
+              .filter((c) => !myClubs.some((m) => sid(m._id) === sid(c._id)))
+              .map((club) => (
+                <ClubCard key={sid(club._id)} club={{ ...club, _id: sid(club._id) }}
+                          status={getStatus(club)} onJoin={handleJoin} onLeave={handleLeave} />
+              ))}
+            {loading && Array.from({ length: 4 }).map((_, i) => <ClubSkeleton key={i} />)}
           </div>
         )}
       </div>
 
       <div ref={sentinelRef} className="h-4" />
-
       {!hasMore && !loading && clubs.length > 0 && (
-        <p className="text-center text-sm text-gray-400 py-4">
-          All clubs loaded
-        </p>
+        <p className="text-center text-sm py-4" style={{ color: "var(--tx-light)" }}>All clubs loaded ✨</p>
       )}
     </div>
   );
 };
 
-// ─── My club row (compact) ────────────────────────────────────────────────────
+// ── My Club Row — click → go to club page ──────────────────────────────────────
 const MyClubRow = ({ club, userId, onLeave }) => {
-  const myMember = club.members?.find(
-    (m) => (m.user?._id ?? m.user) === userId
-  );
-  const role = myMember?.role ?? "member";
-  const isAdmin = club.admin?._id === userId || club.admin === userId;
+  const myMember  = club.members?.find((m) => (m.user?._id ?? m.user) === userId);
+  const role      = myMember?.role ?? "member";
+  const isClubAdmin = club.admin?._id === userId || club.admin === userId;
+  const slug      = club.slug ?? club._id;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100
-                    p-3 flex items-center gap-3">
+    <Link to={`/clubs/${slug}`}
+          className="flex items-center gap-3 p-3 rounded-2xl transition-all group"
+          style={{ background: "var(--card)", border: "1.5px solid var(--border)", textDecoration: "none" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--p300)"; e.currentTarget.style.background = "var(--p50)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--card)"; }}>
       <ClubLogo club={club} size="sm" />
 
       <div className="flex-1 min-w-0">
-        <Link
-          to={`/clubs/${club.slug ?? club._id}`}
-          className="font-medium text-sm text-gray-900
-                     hover:text-indigo-600 transition line-clamp-1"
-        >
+        <p className="font-semibold text-sm truncate flex items-center gap-1"
+           style={{ color: "var(--tx-h)", fontFamily: "Syne, sans-serif" }}>
           {club.name}
-          {club.isVerified && (
-            <span className="ml-1 text-indigo-500 text-xs">✓</span>
-          )}
-        </Link>
-        <p className="text-xs text-gray-400 capitalize">
+          {club.isVerified && <span className="text-xs" style={{ color: "var(--p500)" }}>✓</span>}
+        </p>
+        <p className="text-xs capitalize truncate" style={{ color: "var(--tx-muted)" }}>
           {club.category} · {club.memberCount ?? 0} members
         </p>
       </div>
 
-      <span className={cn(
-        "text-xs font-medium px-2.5 py-1 rounded-full capitalize",
-        isAdmin || role === "co-admin"
-          ? "bg-indigo-50 text-indigo-700"
-          : role === "moderator"
-            ? "bg-purple-50 text-purple-700"
-            : "bg-gray-100 text-gray-600"
-      )}>
-        {isAdmin ? "admin" : role}
+      <span className="badge capitalize shrink-0"
+            style={{
+              background: isClubAdmin || role === "co-admin" ? "var(--p100)" : role === "moderator" ? "#f3e8ff" : "var(--surface2)",
+              color: isClubAdmin || role === "co-admin" ? "var(--p600)" : role === "moderator" ? "#7c3aed" : "var(--tx-muted)",
+            }}>
+        {isClubAdmin ? "admin" : role}
       </span>
 
-      {!isAdmin && (
-        <button
-          onClick={() => onLeave(club)}
-          className="text-xs text-gray-400 hover:text-red-500
-                     transition px-2 py-1"
-        >
+      <div className="flex items-center gap-1 ml-1">
+        {/* Discussion icon hint */}
+        <MessageSquare className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 transition"
+                       style={{ color: "var(--p400)" }} />
+        <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5"
+                      style={{ color: "var(--tx-muted)" }} />
+      </div>
+
+      {/* Stop propagation for leave button */}
+      {!isClubAdmin && (
+        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onLeave(club); }}
+                className="text-xs px-2 py-1 rounded-lg transition ml-1"
+                style={{ color: "var(--tx-muted)" }}
+                onMouseEnter={e => { e.currentTarget.style.color = "var(--danger)"; e.currentTarget.style.background = "#fee2e2"; }}
+                onMouseLeave={e => { e.currentTarget.style.color = "var(--tx-muted)"; e.currentTarget.style.background = "transparent"; }}>
           Leave
         </button>
       )}
-    </div>
+    </Link>
   );
 };
 
-// ─── Club logo helper ─────────────────────────────────────────────────────────
+// ── Club logo helper ──────────────────────────────────────────────────────────
 export const ClubLogo = ({ club, size = "md" }) => {
-  const sizes = {
-    sm: "w-10 h-10 rounded-xl text-sm",
-    md: "w-14 h-14 rounded-2xl text-lg",
-    lg: "w-20 h-20 rounded-2xl text-2xl",
-  };
-
-  if (club.logo?.url) {
-    return (
-      <img
-        src={club.logo.url}
-        alt={club.name}
-        className={cn("object-cover shrink-0", sizes[size])}
-      />
-    );
-  }
-
-  const colors = [
-    "bg-indigo-100 text-indigo-700",
-    "bg-purple-100 text-purple-700",
-    "bg-teal-100 text-teal-700",
-    "bg-pink-100 text-pink-700",
-    "bg-amber-100 text-amber-700",
+  const sizes = { sm: "w-10 h-10 rounded-xl text-sm", md: "w-14 h-14 rounded-2xl text-lg", lg: "w-20 h-20 rounded-2xl text-2xl" };
+  const COLORS = [
+    { bg: "var(--p100)",  color: "var(--p600)" },
+    { bg: "#f3e8ff",      color: "#7c3aed"     },
+    { bg: "#ccfbf1",      color: "#0f766e"     },
+    { bg: "#fce7f3",      color: "#9d174d"     },
+    { bg: "#fef3c7",      color: "#92400e"     },
   ];
-  const color = colors[club.name?.charCodeAt(0) % colors.length];
+  const { bg, color } = COLORS[(club.name?.charCodeAt(0) ?? 0) % COLORS.length];
 
+  if (club.logo?.url) return (
+    <img src={club.logo.url} alt={club.name} className={cn("object-cover shrink-0", sizes[size])} />
+  );
   return (
-    <div className={cn(
-      "flex items-center justify-center font-semibold shrink-0",
-      sizes[size],
-      color
-    )}>
+    <div className={cn("flex items-center justify-center font-bold shrink-0", sizes[size])}
+         style={{ background: bg, color, fontFamily: "Syne, sans-serif" }}>
       {club.name?.[0]?.toUpperCase()}
     </div>
   );

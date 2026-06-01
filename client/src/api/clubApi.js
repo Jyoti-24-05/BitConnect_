@@ -2,6 +2,7 @@
 import axiosInstance from "./axiosInstance";
 
 export const clubApi = {
+  getMyClubs:        ()                        => axiosInstance.get("/clubs/me"),
   discoverClubs:     (params)                 => axiosInstance.get("/clubs", { params }),
   searchClubs:       (params)                 => axiosInstance.get("/clubs/search", { params }),
   getClub:           (slug)                   => axiosInstance.get(`/clubs/${slug}`),

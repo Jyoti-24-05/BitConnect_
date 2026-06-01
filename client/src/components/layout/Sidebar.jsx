@@ -1,23 +1,39 @@
 // client/src/components/layout/Sidebar.jsx
 import { NavLink, Link }  from "react-router-dom";
 import { Home, Calendar, Users, LayoutDashboard, PlusCircle,
-         Bookmark, MessageSquare, GraduationCap, CalendarDays, Settings2,
-         Bell, TrendingUp } from "lucide-react";
+         Bookmark, MessageSquare, GraduationCap, CalendarDays,
+         Settings2, MapPin } from "lucide-react";
 import useAuth            from "@/hooks/useAuth";
 
 const NAV = [
-  { to: "/feed",   label: "Home",       icon: Home },
-  { to: "/events", label: "Events",     icon: Calendar },
-  { to: "/clubs",  label: "Explore BIT",icon: Users },
+  { to: "/feed",        label: "Home",        icon: Home     },
+  { to: "/events",      label: "Events",      icon: Calendar },
+  { to: "/clubs",       label: "Clubs",       icon: Users    },
+  { to: "/explore-bit", label: "Explore BIT", icon: MapPin   },
 ];
 
 const EXTRA = [
-  { to: "/feed",         label: "Messages",      icon: MessageSquare },
-  { to: "/feed",         label: "Syllabus",      icon: GraduationCap },
-  { to: "/feed",         label: "Acad. Calendar",icon: CalendarDays },
-  { to: "/profile/edit", label: "Settings",      icon: Settings2 },
-  { to: "/feed",         label: "Bookmarks",     icon: Bookmark },
+  { to: "/feed",         label: "Messages",       icon: MessageSquare },
+  { to: "/feed",         label: "Syllabus",       icon: GraduationCap },
+  { to: "/feed",         label: "Acad. Calendar", icon: CalendarDays  },
+  { to: "/profile/edit", label: "Settings",       icon: Settings2     },
 ];
+
+const NavItem = ({ to, label, icon: Icon }) => (
+  <NavLink to={to}
+    className={({ isActive }) =>
+      `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive ? "nav-active" : ""}`
+    }
+    style={({ isActive }) => ({
+      color: isActive ? "var(--p600)" : "var(--tx)",
+      fontFamily: "'Plus Jakarta Sans', sans-serif",
+    })}
+    onMouseEnter={e => { if (!e.currentTarget.classList.contains("nav-active")) e.currentTarget.style.background = "var(--p50)"; }}
+    onMouseLeave={e => { if (!e.currentTarget.classList.contains("nav-active")) e.currentTarget.style.background = "transparent"; }}>
+    <Icon className="w-[18px] h-[18px]" />
+    {label}
+  </NavLink>
+);
 
 const Sidebar = () => {
   const { user, isAdmin, isClub } = useAuth();
@@ -53,46 +69,14 @@ const Sidebar = () => {
       {/* Main nav */}
       <div className="card py-2 overflow-hidden">
         <nav className="space-y-0.5 px-2">
-          {NAV.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive ? "nav-active" : ""}`
-              }
-              style={({ isActive }) => ({
-                color: isActive ? "var(--p600)" : "var(--tx)",
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-              })}
-              onMouseEnter={e => { if (!e.currentTarget.classList.contains("nav-active")) e.currentTarget.style.background = "var(--p50)"; }}
-              onMouseLeave={e => { if (!e.currentTarget.classList.contains("nav-active")) e.currentTarget.style.background = "transparent"; }}>
-              <Icon className="w-[18px] h-[18px]" />
-              {label}
-            </NavLink>
-          ))}
+          {NAV.map(item => <NavItem key={item.to} {...item} />)}
 
           {(isClub || isAdmin) && (
-            <NavLink to="/events/create"
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive ? "nav-active" : ""}`
-              }
-              style={({ isActive }) => ({ color: isActive ? "var(--p600)" : "var(--tx)" })}
-              onMouseEnter={e => { if (!e.currentTarget.classList.contains("nav-active")) e.currentTarget.style.background = "var(--p50)"; }}
-              onMouseLeave={e => { if (!e.currentTarget.classList.contains("nav-active")) e.currentTarget.style.background = "transparent"; }}>
-              <PlusCircle className="w-[18px] h-[18px]" />
-              Create Event
-            </NavLink>
+            <NavItem to="/events/create" label="Create Event" icon={PlusCircle} />
           )}
 
           {isAdmin && (
-            <NavLink to="/admin"
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive ? "nav-active" : ""}`
-              }
-              style={({ isActive }) => ({ color: isActive ? "var(--p600)" : "var(--tx)" })}
-              onMouseEnter={e => { if (!e.currentTarget.classList.contains("nav-active")) e.currentTarget.style.background = "var(--p50)"; }}
-              onMouseLeave={e => { if (!e.currentTarget.classList.contains("nav-active")) e.currentTarget.style.background = "transparent"; }}>
-              <LayoutDashboard className="w-[18px] h-[18px]" />
-              Admin
-            </NavLink>
+            <NavItem to="/admin" label="Admin" icon={LayoutDashboard} />
           )}
         </nav>
 

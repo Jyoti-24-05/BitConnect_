@@ -36,8 +36,8 @@
   --accent3:   #c084fc;
 
   /* Semantic */
-  --success:   #10b981;
-  --warning:   #f59e0b;
+  --success:   #32b780;
+  --warning:   #f9de58;
   --danger:    #ef4444;
   --info:      #3b82f6;
 
@@ -135,7 +135,7 @@ h1,h2,h3,h4,h5,h6 {
 
 /* Primary button */
 .btn-primary {
-  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  background: linear-gradient(135deg, #381575 0%, #7e3abd 100%);
   color: #fff;
   border: none;
   border-radius: var(--r);

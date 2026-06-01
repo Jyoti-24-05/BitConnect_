@@ -21,6 +21,9 @@ router.get("/:slug",  ClubCtrl.getClub);
 // ── Auth required ─────────────────────────────────────────────────────────────
 router.use(authenticate);
 
+// ── My clubs — must be before /:slug ─────────────────────────────────────────
+router.get("/me", ClubCtrl.getMyClubs);
+
 // ── Create club (club/admin only) ─────────────────────────────────────────────
 router.post(
   "/",

@@ -36,6 +36,7 @@ export const createEvent = async ({ organizerId, title, description, category, t
     club:         clubId       ?? null,
     organizer:    organizerId,
     status:       status       ?? "draft",
+    isApproved:   true,   // 
     banner:       banner       ?? { url: "", publicId: "" },
   });
 
@@ -202,7 +203,6 @@ export const getEventsByClub = async (clubId, { cursor, limit = 10 } = {}) => {
   const filter = {
     club:      clubId,
     status:    "published",
-    isApproved: true,
     ...(cursor && { startDate: { $gt: new Date(cursor) } }),
   };
 
