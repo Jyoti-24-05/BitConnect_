@@ -59,6 +59,8 @@ const userSchema = new mongoose.Schema(
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     posts:      [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
     bookmarks:  [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
+    // Pending incoming follow requests
+    followRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 
     // --- BitConnect-specific fields ---
     college: {

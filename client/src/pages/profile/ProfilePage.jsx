@@ -50,6 +50,7 @@ const ProfilePage = () => {
   const [hasMore,     setHasMore]     = useState(true);
   const [postLoading, setPostLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [requestSent, setRequestSent]   = useState(false);
   const [followCount, setFollowCount] = useState({ followers: 0, following: 0 });
   const [followModal, setFollowModal] = useState(null); // "followers" | "following"
   const [followList,  setFollowList]  = useState([]);
@@ -72,7 +73,9 @@ const ProfilePage = () => {
           followers: p.followers?.length ?? 0,
           following: p.following?.length ?? 0,
         });
-        setIsFollowing(p.followers?.includes(me?._id) ?? false);
+        const myIdStr = me?._id?.toString();
+        setIsFollowing(p.followers?.some((f) => f.toString?.() === myIdStr || f === myIdStr) ?? false);
+        setRequestSent(p.followRequests?.some((r) => r.toString?.() === myIdStr || r === myIdStr) ?? false);
       } catch (err) {
         if (err.response?.status === 404) setNotFound(true);
         else toast.error("Failed to load profile");
@@ -132,25 +135,29 @@ const ProfilePage = () => {
   }, [cursor, loadPosts]);
   const sentinelRef = useInfiniteScroll(loadMore, hasMore, postLoading);
 
-  // ── Follow / unfollow ───────────────────────────────────────────────────────
+  // ── Follow / unfollow / request ─────────────────────────────────────────────
   const handleFollow = useCallback(async () => {
-    const wasFollowing = isFollowing;
-    setIsFollowing(!wasFollowing);
-    setFollowCount((p) => ({
-      ...p,
-      followers: wasFollowing ? p.followers - 1 : p.followers + 1,
-    }));
     try {
-      await axiosInstance.post(`/users/${profile._id}/follow`);
+      const { data } = await axiosInstance.post(`/users/${profile._id}/follow`);
+      const status = data.data?.status;
+      if (status === "unfollowed") {
+        setIsFollowing(false);
+        setFollowCount((p) => ({ ...p, followers: Math.max(0, p.followers - 1) }));
+        toast.success("Unfollowed");
+      } else if (status === "request_sent") {
+        setRequestSent(true);
+        toast.success("Follow request sent");
+      } else if (status === "request_cancelled") {
+        setRequestSent(false);
+        toast.success("Request cancelled");
+      } else if (status === "followed") {
+        setIsFollowing(true);
+        setFollowCount((p) => ({ ...p, followers: p.followers + 1 }));
+      }
     } catch {
-      setIsFollowing(wasFollowing);
-      setFollowCount((p) => ({
-        ...p,
-        followers: wasFollowing ? p.followers + 1 : p.followers - 1,
-      }));
       toast.error("Failed to update follow");
     }
-  }, [isFollowing, profile]);
+  }, [profile]);
 
   // ── Load followers / following list ─────────────────────────────────────────
   const openFollowModal = useCallback(async (type) => {
@@ -230,10 +237,12 @@ const ProfilePage = () => {
                 <>
                   <button
                     onClick={handleFollow}
-                    className={isFollowing ? "btn-ghost flex items-center gap-1.5 px-4 py-2 text-sm" : "btn-primary flex items-center gap-1.5 px-4 py-2 text-sm"}
+                    className={isFollowing || requestSent ? "btn-ghost flex items-center gap-1.5 px-4 py-2 text-sm" : "btn-primary flex items-center gap-1.5 px-4 py-2 text-sm"}
                   >
                     {isFollowing ? (
                       <><UserMinus className="w-4 h-4" /> Unfollow</>
+                    ) : requestSent ? (
+                      <><UserMinus className="w-4 h-4" /> Requested</>
                     ) : (
                       <><UserPlus className="w-4 h-4" /> Follow</>
                     )}

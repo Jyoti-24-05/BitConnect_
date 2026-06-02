@@ -3,6 +3,7 @@ import { Server } from "socket.io";
 import { socketAuth } from "./socketAuth.js";
 import { registerNotifHandlers } from "./handlers/notif.handler.js";
 import { registerRsvpHandlers }  from "./handlers/rsvp.handler.js";
+import { registerMessageHandlers } from "./handlers/message.handler.js";
 
 // SOCKET_EVENTS — single source of truth, imported by both server and client
 export const SOCKET_EVENTS = {
@@ -16,6 +17,10 @@ export const SOCKET_EVENTS = {
   // Events / RSVP
   RSVP_UPDATED:    "rsvp:updated",
   EVENT_UPDATED:   "event:updated",
+  // Direct messages
+  MESSAGE_SEND:    "message:send",
+  MESSAGE_RECEIVE: "message:receive",
+  MESSAGE_READ:    "message:read",
   // Feed
   NEW_POST:        "feed:new_post",
   POST_LIKED:      "feed:post_liked",
@@ -29,7 +34,7 @@ let io; // singleton — exported for use in controllers
 export const initSocket = (httpServer) => {
   io = new Server(httpServer, {
     cors: {
-      origin:      process.env.CLIENT_URL,
+      origin: (process.env.CLIENT_URL ?? "").split(",").map(u => u.trim()).filter(Boolean),
       methods:     ["GET", "POST"],
       credentials: true,
     },
@@ -52,6 +57,7 @@ export const initSocket = (httpServer) => {
     // Register domain-specific event handlers
     registerNotifHandlers(io, socket);
     registerRsvpHandlers(io, socket);
+    registerMessageHandlers(io, socket);
 
     // Broadcast presence to followers (can be scoped if needed)
     socket.broadcast.emit(SOCKET_EVENTS.USER_ONLINE, { userId: _id, username });

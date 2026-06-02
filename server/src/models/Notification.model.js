@@ -10,6 +10,7 @@ export const NOTIFICATION_TYPES = {
   COMMENT_LIKED:    "comment_liked",
   COMMENT_REPLIED:  "comment_replied",
   // Social
+  FOLLOW_REQUEST:   "follow_request",
   NEW_FOLLOWER:     "new_follower",
   FOLLOW_ACCEPTED:  "follow_accepted",
   // Events
