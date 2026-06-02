@@ -29,12 +29,18 @@ app.use(helmet({
 
 app.use(cors({
   origin(origin, callback) {
+    // Support comma-separated list in CLIENT_URL env var e.g.
+    // "https://bit-connect-jyoti-24-05.vercel.app,https://bit-connect-beta.vercel.app"
+    const envOrigins = (process.env.CLIENT_URL ?? "")
+      .split(",")
+      .map((u) => u.trim())
+      .filter(Boolean);
+
     const whitelist = [
-  process.env.CLIENT_URL,
-  process.env.CLIENT_URL_2,
-  "http://localhost:5173",
-  "http://localhost:3000",
-].filter(Boolean);
+      ...envOrigins,
+      "http://localhost:5173",
+      "http://localhost:3000",
+    ];
     if (!origin || whitelist.includes(origin)) return callback(null, true);
     return callback(new Error(`CORS: origin ${origin} not allowed`));
   },

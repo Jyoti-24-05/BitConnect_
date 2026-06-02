@@ -9,20 +9,25 @@ import { deleteFromCloudinary } from "../config/cloudinary.js";
 import sendEmail                from "../utils/sendEmail.js";
 
 // ─── Cookie config ────────────────────────────────────────────────────────────
+// Cross-domain deployment (Vercel frontend + Render backend) requires
+// sameSite: "none" + secure: true so browsers send the cookie cross-site.
+// In local dev (same origin via Vite proxy) "lax" is fine and doesn't
+// require HTTPS.
 const isProd = process.env.NODE_ENV === "production";
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure:   isProd,
-  sameSite: isProd ? "none" : "strict",
-  maxAge:   7 * 24 * 60 * 60 * 1000,
+  sameSite: isProd ? "none" : "lax",
+  maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
 const CLEAR_COOKIE_OPTIONS = {
   httpOnly: true,
   secure:   isProd,
-  sameSite: isProd ? "none" : "strict",
+  sameSite: isProd ? "none" : "lax",
 };
+
 // ─── Internal helper ──────────────────────────────────────────────────────────
 const generateTokenPair = (user) => ({
   accessToken:  user.generateAccessToken(),
