@@ -100,12 +100,12 @@ useEffect(() => {
 
         // Determine user's join status
         if (user) {
+          const uid    = String(user._id);
           const member = c.members?.find(
-            (m) => (m.user?._id ?? m.user) === user._id
+          (m) => String(m.user?._id ?? m.user) === uid && m.status === "active"
           );
           const pending = c.joinRequests?.find(
-            (r) => (r.user?._id ?? r.user) === user._id &&
-                    r.status === "pending"
+          (r) => String(r.user?._id ?? r.user) === uid && r.status === "pending"
           );
           if      (member)  setJoinStatus(member.role);
           else if (pending) setJoinStatus("pending");
@@ -227,7 +227,7 @@ useEffect(() => {
   }
   if (!club) return null;
 
-  const isClubAdmin   = club.admin?._id === user?._id || club.admin === user?._id;
+  const isClubAdmin = String(club.admin?._id ?? club.admin) === String(user?._id);
   const isModerator   = club.members?.some(
     (m) => (m.user?._id ?? m.user) === user?._id &&
             m.role === "moderator" && m.status === "active"

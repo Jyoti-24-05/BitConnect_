@@ -73,7 +73,7 @@ const ClubsPage = () => {
   const loadMore    = useCallback(() => { if (cursor && cursor !== "more") loadClubs(cursor); }, [cursor, loadClubs]);
   const sentinelRef = useInfiniteScroll(loadMore, hasMore, loading);
 
-  const sid = (id) => id?.toString() ?? id;
+  const sid = (id) => (id?._id ?? id)?.toString() ?? "";
 
   // ── Join ─────────────────────────────────────────────────────────────────────
   const handleJoin = useCallback(async (club) => {

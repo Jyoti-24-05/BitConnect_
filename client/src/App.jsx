@@ -28,6 +28,7 @@ import EditProfilePage     from "@/pages/profile/EditProfilePage";
 import AdminDashboard      from "@/pages/admin/AdminDashboard";
 import NotFoundPage        from "@/pages/NotFoundPage";
 import ExploreBITPage      from "@/pages/explore/ExploreBITPage";
+import MessagesPage        from "@/pages/messages/MessagesPage";
 
 // Socket wrapper — only mounts socket when user is logged in
 const SocketWrapper = ({ children }) => {
@@ -77,6 +78,8 @@ const App = () => {
               <Route path="/profile/:username"  element={<ProfilePage />} />
               <Route path="/profile/edit"       element={<EditProfilePage />} />
               <Route path="/explore-bit"          element={<ExploreBITPage />} />
+              <Route path="/messages"             element={<MessagesPage />} />
+              <Route path="/messages/:userId"    element={<MessagesPage />} />
 
               {/* Admin only */}
               <Route element={<ProtectedRoute requiredRole="admin" />}>

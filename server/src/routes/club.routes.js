@@ -16,14 +16,16 @@ const router = Router();
 // ── Public ────────────────────────────────────────────────────────────────────
 router.get("/",       ClubCtrl.discoverClubs);
 router.get("/search", ClubCtrl.searchClubs);
-router.get("/:slug",  ClubCtrl.getClub);
+
 
 // ── Auth required ─────────────────────────────────────────────────────────────
 router.use(authenticate);
 
-// ── My clubs — must be before /:slug ─────────────────────────────────────────
+// ── /me must be BEFORE /:slug or Express matches "me" as a slug ──────────────
 router.get("/me", ClubCtrl.getMyClubs);
 
+// ── /:slug is now safely below /me ───────────────────────────────────────────
+router.get("/:slug", ClubCtrl.getClub);
 // ── Create club (club/admin only) ─────────────────────────────────────────────
 router.post(
   "/",

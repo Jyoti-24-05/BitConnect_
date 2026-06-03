@@ -13,10 +13,11 @@ const NAV = [
 ];
 
 const EXTRA = [
-  { to: "/feed",         label: "Messages",       icon: MessageSquare },
+  { to: "/messages",     label: "Messages",       icon: MessageSquare },
   { to: "/feed",         label: "Syllabus",       icon: GraduationCap },
   { to: "/feed",         label: "Acad. Calendar", icon: CalendarDays  },
   { to: "/profile/edit", label: "Settings",       icon: Settings2     },
+  { to: "/feed",         label: "Bookmarks",      icon: Bookmark      },
 ];
 
 const NavItem = ({ to, label, icon: Icon }) => (
